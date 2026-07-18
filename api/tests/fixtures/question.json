@@ -1,0 +1,12 @@
+{
+  "intent": "question",
+  "grounded": true,
+  "answer": "Lists can change after creation; tuples cannot.",
+  "citations": [{"chunk_id": "mock-chunk", "snippet": "A list is mutable, meaning its contents can be changed after creation. A tuple is immutable."}],
+  "misconception_detected": false,
+  "misconception": null,
+  "remediation": null,
+  "verification_question": null,
+  "verification_verdict": null,
+  "follow_up_question": "Which would you use for coordinates that must not change, and why?"
+}

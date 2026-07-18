@@ -1,0 +1,12 @@
+{
+  "intent": "answer_attempt",
+  "grounded": true,
+  "answer": "",
+  "citations": [{"chunk_id": "mock-chunk", "snippet": "A tuple is immutable, meaning its contents cannot be changed after creation."}],
+  "misconception_detected": true,
+  "misconception": {"description": "The student believes tuple values can be modified.", "evidence": "A tuple is better because we can modify its values later."},
+  "remediation": "A list is like a whiteboard; a tuple is like a printed page.",
+  "verification_question": "What happens if you run point[0] = 5 when point is a tuple?",
+  "verification_verdict": null,
+  "follow_up_question": null
+}
