@@ -60,6 +60,8 @@ Unit and contract tests use real Docker PostgreSQL with deterministic mock AI. T
 
 ```powershell
 docker compose exec api pytest -q
+npm --prefix web test
+npm --prefix web run build
 ```
 
 The smoke journey verifies health → seed lesson → session → tutor turn → report:
@@ -134,3 +136,13 @@ docker compose exec db psql -U postgres -d pragyanta -c "\dx vector"
 - `GET /api/lessons/{id}/report` — misconception evidence and totals
 
 All expected API errors are returned as JSON with a safe `error` message; raw model output and tracebacks are never sent to the browser.
+
+## Demo, architecture, and deployment
+
+- `docs/DEMO.md` — exact three-minute recording runbook
+- `docs/SUBMISSION.md` — Devpost-ready submission copy
+- `docs/ARCHITECTURE.md` — application and data-flow architecture
+- `docs/RELEASE_CHECKLIST.md` — local, demo, and production gates
+- `deploy/DEPLOYMENT.md` — credential-free Render/Railway preparation and public smoke checks
+
+`render.yaml` is deployment-ready, but no public deployment URL is claimed until a provider account creates and verifies it.

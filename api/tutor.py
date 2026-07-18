@@ -103,7 +103,20 @@ def _live_turn(message: str, chunks, level: str, history: list[Message], open_it
                 text_format=TutorTurn,
             )
             if response.output_parsed:
-                return response.output_parsed
+                turn = response.output_parsed
+                allowed = {str(chunk.id): chunk.content for chunk in chunks}
+                turn.citations = [
+                    citation for citation in turn.citations
+                    if citation.chunk_id in allowed and citation.snippet.strip() in allowed[citation.chunk_id]
+                ]
+                if turn.grounded and (turn.answer or turn.remediation) and not turn.citations:
+                    turn.grounded = False
+                    turn.answer = "The teacher's material does not provide enough evidence for me to answer that."
+                    turn.remediation = None
+                    turn.misconception_detected = False
+                    turn.misconception = None
+                    turn.verification_question = None
+                return turn
         except Exception as exc:  # one bounded retry; caller converts to a safe message
             last_error = exc
     raise RuntimeError("Tutor response could not be parsed") from last_error
@@ -154,7 +167,7 @@ def process_chat(db: Session, session: LearningSession, student_text: str) -> di
         open_item.status = status
         open_item.resolved_at = datetime.now(timezone.utc) if status == MisconceptionStatus.resolved else None
         if status == MisconceptionStatus.resolved:
-            content = "Misconception resolved|Exactly. A tuple does not support item assignment because it is immutable.|You've got the key difference."
+            content = "Exactly. A tuple does not support item assignment because it is immutable. You've got the key difference."
         else:
             content = "Let's leave this one open for now. A tuple is fixed after creation, while a list can change. We can return to it later."
         add_tutor(MessageType.verdict, content, verdict=status)

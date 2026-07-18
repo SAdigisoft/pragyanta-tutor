@@ -23,6 +23,7 @@ services:
       DATABASE_URL: ${DATABASE_URL:-postgresql+psycopg://postgres:postgres@db:5432/pragyanta}
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
       MOCK_OPENAI: ${MOCK_OPENAI:-1}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:5173}
     volumes:
       - ./api:/app/api
       - ./alembic:/app/alembic
@@ -52,4 +53,3 @@ services:
 volumes:
   pragyanta_postgres_data:
   web_node_modules:
-

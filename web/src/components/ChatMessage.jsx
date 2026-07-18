@@ -9,16 +9,22 @@ export default function ChatMessage({ message }) {
   if (message.msg_type === 'remediation') return (
     <div className="message-row tutor"><section className="remediation-panel">
       <div className="panel-eyebrow"><span className="attention-symbol">↺</span>{message.title || 'Let’s fix something'}</div>
-      <h3>{message.misconception}</h3><p>{message.content}</p>
+      <h3>{message.misconception || 'A key idea needs another look'}</h3><p>{message.content}</p>
       {message.citations?.map((item) => <CitationCard citation={item} key={item.chunk_id} />)}
     </section></div>
   )
-  if (message.msg_type === 'verdict') return (
-    <div className="message-row tutor"><section className={`verdict-panel ${message.status}`}>
-      <div className="verdict-icon">{message.status === 'resolved' ? <CheckIcon /> : '↺'}</div>
-      <div><div className="panel-eyebrow">{message.status === 'resolved' ? 'Misconception resolved' : 'Keep this idea in view'}</div><p>{message.content}</p>{message.detail && <small>{message.detail}</small>}</div>
-    </section></div>
-  )
+  if (message.msg_type === 'verdict') {
+    const status = message.status || message.verdict_status || 'unresolved'
+    const contentParts = String(message.content || '').split('|').map((part) => part.trim()).filter(Boolean)
+    const content = contentParts[0] || ''
+    const detail = message.detail || contentParts.slice(1).join(' ')
+    return (
+      <div className="message-row tutor"><section className={`verdict-panel ${status}`}>
+        <div className="verdict-icon">{status === 'resolved' ? <CheckIcon /> : '↺'}</div>
+        <div><div className="panel-eyebrow">{status === 'resolved' ? 'Misconception resolved' : 'Keep this idea in view'}</div><p>{content}</p>{detail && <small>{detail}</small>}</div>
+      </section></div>
+    )
+  }
   return (
     <div className="message-row tutor"><div className="tutor-wrap"><div className="tutor-avatar"><BookIcon size={18} /></div><div className="tutor-content">
       {message.msg_type === 'off_topic' && <div className="boundary-badge"><span>◇</span> Outside lesson material</div>}

@@ -1,10 +1,12 @@
 from collections import Counter
+import os
 from uuid import UUID
 
 from fastapi import Depends, FastAPI, HTTPException, Request, UploadFile
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
@@ -15,10 +17,11 @@ from api.schemas import ChatCreate, LessonTextCreate, SessionCreate, SessionLeve
 from api.tutor import process_chat
 
 app = FastAPI(title="Pragyanta Tutor API", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["http://localhost:5173"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+cors_origins = [origin.strip().rstrip("/") for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if origin.strip()]
+app.add_middleware(CORSMiddleware, allow_origins=cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 
-@app.exception_handler(HTTPException)
+@app.exception_handler(StarletteHTTPException)
 async def http_error(_request, exc):
     return JSONResponse(status_code=exc.status_code, content={"error": str(exc.detail)})
 

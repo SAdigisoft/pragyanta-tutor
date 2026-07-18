@@ -1,0 +1,48 @@
+databases:
+  - name: pragyanta-db
+    databaseName: pragyanta
+    user: pragyanta
+    plan: free
+    region: singapore
+    postgresMajorVersion: "16"
+    ipAllowList: []
+
+services:
+  - type: web
+    name: pragyanta-api
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: .
+    dockerCommand: >-
+      sh -c "alembic upgrade head && python -m api.seed &&
+      uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-10000}"
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: pragyanta-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        sync: false
+      - key: MOCK_OPENAI
+        value: "1"
+
+  - type: web
+    name: pragyanta-web
+    runtime: static
+    rootDir: web
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        sync: false
+      - key: VITE_MOCK
+        value: "0"
+      - key: VITE_SHOW_DEMO_SWITCHER
+        value: "false"
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
