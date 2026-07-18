@@ -35,6 +35,7 @@ Invoke-Step "[4/5] Grounded tutor turn" {
     $body = @{ message = "What is the difference between a list and a tuple?" } | ConvertTo-Json
     $script:chat = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/sessions/$($session.session_id)/chat" -ContentType "application/json" -Body $body
     if (-not $chat.tutor_messages -or $chat.tutor_messages.Count -lt 1) { throw "Tutor returned no messages" }
+    if ($chat.misconception_update) { throw "A direct learner question was incorrectly classified as a misconception" }
 }
 
 Invoke-Step "[5/5] Teacher report" {

@@ -47,6 +47,7 @@ echo "[4/5] Grounded tutor turn"
 request POST "$BASE_URL/api/sessions/$SESSION_ID/chat" "$SMOKE_TMP/chat.json" \
   '{"message":"What is the difference between a list and a tuple?"}'
 [[ "$(json_value "$SMOKE_TMP/chat.json" 'len(data["tutor_messages"])')" -ge 1 ]]
+[[ "$(json_value "$SMOKE_TMP/chat.json" 'data.get("misconception_update") is None')" == "True" ]]
 
 echo "[5/5] Teacher report"
 request GET "$BASE_URL/api/lessons/$LESSON_ID/report" "$SMOKE_TMP/report.json"

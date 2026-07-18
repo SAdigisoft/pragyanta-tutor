@@ -27,11 +27,58 @@ Keyless mode is intentionally limited: it validates every screen, route, databas
 
 ```dotenv
 OPENAI_API_KEY=
+AI_PROVIDER=mock
 MOCK_OPENAI=1
 VITE_MOCK=0
 ```
 
 `VITE_MOCK=0` connects the browser to the real local FastAPI/PostgreSQL stack. Use `VITE_MOCK=1` only for isolated frontend work.
+
+## Run with real local AI through Ollama
+
+Ollama provides real local embeddings and structured tutor responses without an API key. Install Ollama on the host, then pull the two configured models:
+
+```powershell
+ollama pull qwen2.5:3b
+ollama pull nomic-embed-text
+```
+
+The embedding model returns 768 dimensions. The backend zero-pads them to the existing PostgreSQL `vector(1536)` schema; zero-padding preserves cosine similarity and avoids loading a second multi-gigabyte model on modest GPUs. Allow Docker to reach the host Ollama service, then use:
+
+```powershell
+[Environment]::SetEnvironmentVariable("OLLAMA_HOST", "0.0.0.0:11434", "User")
+```
+
+Restart Ollama after setting the variable. Restrict port 11434 to private/local networks in Windows Firewall. If this Docker Desktop installation cannot resolve `host.docker.internal`, use the IPv4 address shown for `vEthernet (WSL (Hyper-V firewall))` as `OLLAMA_BASE_URL`; this repository's ignored local `.env` already contains the detected address for this machine.
+
+```dotenv
+AI_PROVIDER=ollama
+OLLAMA_BASE_URL=http://host.docker.internal:11434
+OLLAMA_CHAT_MODEL=qwen2.5:3b
+OLLAMA_EMBED_MODEL=nomic-embed-text
+VITE_MOCK=0
+```
+
+Recreate the API container after changing provider settings:
+
+```powershell
+docker compose up -d --force-recreate api
+docker compose exec api python -m api.scripts.reindex_embeddings
+```
+
+Reindexing is required whenever the embedding provider or model changes; vectors from different models must never be compared in the same pgvector search.
+
+Keep `AI_PROVIDER=mock` for automated tests. Run the live 25-case tutor evaluation separately with:
+
+```powershell
+docker compose exec -e AI_PROVIDER=ollama api python api/tests/eval_tutor.py
+```
+
+Verify the critical live-model state transition through the public HTTP API with:
+
+```powershell
+docker compose exec api python -m api.scripts.verify_ollama_journey
+```
 
 ## Database and reproducible screen data
 
@@ -85,7 +132,7 @@ When a key is available, update `.env` without committing it:
 
 ```dotenv
 OPENAI_API_KEY=your-key-in-your-local-env
-MOCK_OPENAI=0
+AI_PROVIDER=openai
 VITE_MOCK=0
 ```
 

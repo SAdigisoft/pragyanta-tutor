@@ -4,6 +4,7 @@ import os
 from uuid import UUID
 
 # Contract tests must never spend money or require a developer secret.
+os.environ["AI_PROVIDER"] = "mock"
 os.environ.setdefault("MOCK_OPENAI", "1")
 os.environ.pop("OPENAI_API_KEY", None)
 

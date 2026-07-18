@@ -7,15 +7,18 @@ from io import BytesIO
 from uuid import UUID
 
 import numpy as np
+import httpx
 from openai import OpenAI
 from pypdf import PdfReader
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from api.models import Chunk
+from api.ai import get_ai_provider, ollama_base_url
 
 EMBEDDING_MODEL = "text-embedding-3-small"
 EMBEDDING_DIMS = 1536
+OLLAMA_EMBEDDING_MODEL = "nomic-embed-text"
 
 
 @dataclass
@@ -68,9 +71,28 @@ def _mock_embedding(text: str) -> list[float]:
 def embed(texts: list[str]) -> list[list[float]]:
     if not texts:
         return []
-    use_mock = os.getenv("MOCK_OPENAI", "1") == "1" or not os.getenv("OPENAI_API_KEY")
-    if use_mock:
+    provider = get_ai_provider()
+    if provider == "mock":
         return [_mock_embedding(text) for text in texts]
+    if provider == "ollama":
+        model = os.getenv("OLLAMA_EMBED_MODEL", OLLAMA_EMBEDDING_MODEL)
+        with httpx.Client(timeout=120.0) as client:
+            response = client.post(
+                f"{ollama_base_url()}/api/embed",
+                json={"model": model, "input": texts, "dimensions": EMBEDDING_DIMS},
+            )
+            response.raise_for_status()
+        vectors = response.json().get("embeddings", [])
+        if len(vectors) != len(texts) or any(
+            not vector or len(vector) > EMBEDDING_DIMS for vector in vectors
+        ):
+            raise RuntimeError(
+                f"Ollama embedding model {model!r} must return between 1 and "
+                f"{EMBEDDING_DIMS} dimensions for every input"
+            )
+        # Appending zeros preserves cosine similarity while keeping the fixed
+        # PostgreSQL vector(1536) contract used by the OpenAI provider.
+        return [vector + [0.0] * (EMBEDDING_DIMS - len(vector)) for vector in vectors]
     response = OpenAI().embeddings.create(model=EMBEDDING_MODEL, input=texts)
     ordered = sorted(response.data, key=lambda item: item.index)
     return [item.embedding for item in ordered]
@@ -91,4 +113,3 @@ def retrieve(db: Session, lesson_id: UUID, query: str, k: int = 4) -> list[Chunk
         .limit(k)
     )
     return list(db.scalars(statement))
-

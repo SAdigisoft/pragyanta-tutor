@@ -1,9 +1,10 @@
-"""Run the committed tutor golden set against the real OpenAI model.
+"""Run the committed tutor golden set against a real configured model.
 
 This is intentionally a script, not a pytest module. It spends API credits and
 is only run during prompt tuning:
 
-    MOCK_OPENAI=0 OPENAI_API_KEY=... python api/tests/eval_tutor.py
+    AI_PROVIDER=openai OPENAI_API_KEY=... python api/tests/eval_tutor.py
+    AI_PROVIDER=ollama python api/tests/eval_tutor.py
 """
 from __future__ import annotations
 
@@ -20,7 +21,8 @@ if str(ROOT) not in sys.path:
 
 from api.models import MessageRole, MessageType
 from api.rag import chunk_text
-from api.tutor import _live_turn
+from api.ai import get_ai_provider
+from api.tutor import _live_turn, _ollama_turn
 
 GOLDEN_PATH = Path(__file__).with_name("golden_set.json")
 SEED_PATH = ROOT / "api" / "seed_lesson.md"
@@ -65,7 +67,9 @@ def _evaluate(case: dict, chunks: list[SimpleNamespace]) -> tuple[bool, str]:
     open_item = None
     if case.get("context") == "after_remediation":
         history, open_item = _verification_context()
-    turn = _live_turn(case["student_message"], chunks, "beginner", history, open_item)
+    provider = get_ai_provider()
+    run_turn = _ollama_turn if provider == "ollama" else _live_turn
+    turn = run_turn(case["student_message"], chunks, "beginner", history, open_item)
 
     mismatches: list[str] = []
     checks = {
@@ -82,14 +86,14 @@ def _evaluate(case: dict, chunks: list[SimpleNamespace]) -> tuple[bool, str]:
 
 
 def main() -> int:
-    if not os.getenv("OPENAI_API_KEY"):
-        print("OPENAI_API_KEY is required for the real tutor evaluation.", file=sys.stderr)
+    provider = get_ai_provider()
+    if provider == "mock":
+        print("Set AI_PROVIDER to ollama or openai for the real tutor evaluation.", file=sys.stderr)
         return 2
-    os.environ["MOCK_OPENAI"] = "0"
     cases = json.loads(GOLDEN_PATH.read_text(encoding="utf-8"))["cases"]
     chunks = _lesson_chunks()
     passed = 0
-    print(f"Running {len(cases)} cases with the real tutor model\n")
+    print(f"Running {len(cases)} cases with the real {provider} tutor model\n")
     for case in cases:
         try:
             ok, detail = _evaluate(case, chunks)
