@@ -110,6 +110,31 @@ test.describe('Pragyanta product journeys', () => {
     await page.screenshot({ path: '../artifacts/redesign/27-all-lessons-practice.png', fullPage: true })
   })
 
+  test('keeps the sidebar and long lesson headers usable across every product surface', async ({ page, request }) => {
+    const lessons = await (await request.get(`${API}/api/lessons`)).json()
+    const lesson = lessons.find((item) => item.title === 'Python Files and Input/Output')
+    const created = await request.post(`${API}/api/sessions`, { data: { lesson_id: lesson.lesson_id, learner_level: 'beginner', is_demo: true } })
+    const { session_id: sessionId } = await created.json()
+    const routes = [
+      `${WEB}/?role=teacher`,
+      `${WEB}/?role=teacher#upload`,
+      `${WEB}/learn/${sessionId}?role=student`,
+      `${WEB}/practice/${lesson.lesson_id}?role=student`,
+      `${WEB}/report/${lesson.lesson_id}?role=teacher`,
+      `${WEB}/learn/00000000-0000-0000-0000-000000000001?role=student`,
+    ]
+    for (const route of routes) {
+      await page.goto(route)
+      const navigation = page.getByRole('navigation', { name: 'Main navigation' })
+      await expect(navigation).toBeVisible()
+      expect(Math.round((await navigation.boundingBox()).x)).toBe(0)
+    }
+    await page.goto(`${WEB}/learn/${sessionId}?role=student`)
+    const titleBox = await page.locator('.header-lesson').boundingBox()
+    const levelBox = await page.locator('.level-control').boundingBox()
+    expect(titleBox.x + titleBox.width).toBeLessThanOrEqual(levelBox.x)
+  })
+
   test('runs the complete keyless guided showcase without Ollama', async ({ page, request }) => {
     const lessons = await (await request.get(`${API}/api/lessons`)).json()
     const lesson = lessons.find((item) => item.title === 'Python Lists and Tuples')
