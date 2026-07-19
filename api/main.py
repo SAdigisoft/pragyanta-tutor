@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from api.database import get_db
-from api.models import Chunk, LearnerLevel, LearningSession, Lesson, Message, Misconception, MisconceptionStatus
+from api.models import Chunk, LearnerLevel, LearningSession, Lesson, Message, Misconception, MisconceptionStatus, PracticeQuestion
 from api.rag import chunk_text, embed, extract_pdf_text
 from api.schemas import ChatCreate, LessonTextCreate, SessionCreate, SessionLevelUpdate
 from api.tutor import process_chat
@@ -38,7 +38,9 @@ def health():
 
 def _lesson_response(db: Session, lesson: Lesson):
     count = db.scalar(select(func.count(Chunk.id)).where(Chunk.lesson_id == lesson.id)) or 0
-    return {"lesson_id": str(lesson.id), "title": lesson.title, "created_at": lesson.created_at.isoformat(), "chunk_count": count}
+    question_count = db.scalar(select(func.count(PracticeQuestion.id)).where(PracticeQuestion.lesson_id == lesson.id)) or 0
+    return {"lesson_id": str(lesson.id), "title": lesson.title, "created_at": lesson.created_at.isoformat(),
+            "chunk_count": count, "question_count": question_count}
 
 
 @app.post("/api/lessons", status_code=201)
@@ -80,12 +82,42 @@ async def create_lesson(request: Request, db: Session = Depends(get_db)):
     db.add_all([Chunk(lesson_id=lesson.id, chunk_index=piece.chunk_index, content=piece.content, embedding=vector)
                 for piece, vector in zip(pieces, vectors, strict=True)])
     db.commit()
-    return {"lesson_id": str(lesson.id), "title": lesson.title, "chunk_count": len(pieces)}
+    return _lesson_response(db, lesson)
 
 
 @app.get("/api/lessons")
 def list_lessons(db: Session = Depends(get_db)):
     return [_lesson_response(db, lesson) for lesson in db.scalars(select(Lesson).order_by(Lesson.created_at.desc()))]
+
+
+@app.get("/api/sessions")
+def list_sessions(limit: int = 30, db: Session = Depends(get_db)):
+    """Return recent tutor conversations for sidebar navigation."""
+    limit = max(1, min(limit, 100))
+    last_message = (
+        select(Message.content)
+        .where(Message.session_id == LearningSession.id)
+        .order_by(Message.created_at.desc(), Message.id.desc())
+        .limit(1)
+        .scalar_subquery()
+    )
+    statement = (
+        select(LearningSession, Lesson, last_message.label("last_message"))
+        .join(Lesson, Lesson.id == LearningSession.lesson_id)
+        .order_by(LearningSession.created_at.desc())
+        .limit(limit)
+    )
+    return [
+        {
+            "session_id": str(session.id),
+            "lesson_id": str(session.lesson_id),
+            "lesson_title": lesson.title,
+            "learner_level": session.learner_level.value,
+            "last_message": preview,
+            "created_at": session.created_at.isoformat(),
+        }
+        for session, lesson, preview in db.execute(statement)
+    ]
 
 
 @app.post("/api/sessions", status_code=201)
@@ -100,6 +132,21 @@ def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
     db.add(session)
     db.commit()
     return {"session_id": str(session.id)}
+
+
+@app.get("/api/sessions/{session_id}")
+def get_session(session_id: UUID, db: Session = Depends(get_db)):
+    session = db.get(LearningSession, session_id)
+    if not session:
+        raise HTTPException(404, "Session not found")
+    lesson = db.get(Lesson, session.lesson_id)
+    return {
+        "session_id": str(session.id),
+        "lesson_id": str(session.lesson_id),
+        "lesson_title": lesson.title,
+        "learner_level": session.learner_level.value,
+        "created_at": session.created_at.isoformat(),
+    }
 
 
 @app.patch("/api/sessions/{session_id}")
@@ -131,6 +178,24 @@ def messages(session_id: UUID, db: Session = Depends(get_db)):
     return [{"id": str(item.id), "role": item.role.value, "content": item.content, "msg_type": item.msg_type.value,
              "citations": item.citations, "verdict_status": item.verdict_status.value if item.verdict_status else None,
              "created_at": item.created_at.isoformat()} for item in rows]
+
+
+@app.get("/api/lessons/{lesson_id}/questions")
+def lesson_questions(lesson_id: UUID, limit: int = 20, difficulty: str | None = None, db: Session = Depends(get_db)):
+    if not db.get(Lesson, lesson_id):
+        raise HTTPException(404, "Lesson not found")
+    limit = max(1, min(limit, 100))
+    statement = select(PracticeQuestion).where(PracticeQuestion.lesson_id == lesson_id)
+    if difficulty:
+        try:
+            statement = statement.where(PracticeQuestion.difficulty == LearnerLevel(difficulty))
+        except ValueError as exc:
+            raise HTTPException(422, "difficulty must be beginner or intermediate") from exc
+    rows = list(db.scalars(statement.order_by(func.random()).limit(limit)))
+    return [{"id": str(item.id), "kind": item.kind, "difficulty": item.difficulty.value,
+             "prompt": item.prompt, "options": item.options, "answer": item.answer,
+             "explanation": item.explanation, "misconception": item.misconception,
+             "source_quote": item.source_quote} for item in rows]
 
 
 @app.get("/api/lessons/{lesson_id}/report")

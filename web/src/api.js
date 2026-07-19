@@ -1,4 +1,4 @@
-import { LESSON, delay, exchangeStudent, report, tutorTurns } from './mocks'
+import { LESSON, delay, exchangeStudent, practiceQuestions, report, tutorTurns } from './mocks'
 
 const mockFlag = import.meta.env.VITE_USE_MOCKS ?? import.meta.env.VITE_MOCK
 const useMocks = mockFlag !== 'false' && mockFlag !== '0'
@@ -8,6 +8,7 @@ let lessons = [LESSON]
 let messages = []
 let step = 0
 let level = 'beginner'
+let sessions = []
 
 async function request(path, options = {}) {
   const response = await fetch(`${API_BASE}${path}`, {
@@ -43,7 +44,23 @@ export async function createLesson(input) {
 export async function createSession(payload) {
   if (!useMocks) return request('/api/sessions', { method: 'POST', body: JSON.stringify(payload) })
   await delay(380); level = payload.learner_level || 'beginner'; messages = []; step = 0
+  const lesson = lessons.find((item) => item.lesson_id === payload.lesson_id) || LESSON
+  sessions = [{ session_id: 'demo-session', lesson_id: lesson.lesson_id, lesson_title: lesson.title, learner_level: level, last_message: null, created_at: new Date().toISOString() }, ...sessions.filter((item) => item.session_id !== 'demo-session')]
   return { session_id: 'demo-session' }
+}
+
+export async function getSessions() {
+  if (!useMocks) return request('/api/sessions')
+  await delay(180)
+  return sessions.map((item) => item.session_id === 'demo-session' ? { ...item, last_message: messages.at(-1)?.content || item.last_message } : item)
+}
+
+export async function getSession(sessionId) {
+  if (!useMocks) return request(`/api/sessions/${sessionId}`)
+  await delay(120)
+  const session = sessions.find((item) => item.session_id === sessionId)
+  if (session) return { ...session }
+  return { session_id: sessionId, lesson_id: LESSON.lesson_id, lesson_title: LESSON.title, learner_level: level, created_at: new Date().toISOString() }
 }
 
 export async function getMessages(sessionId) {
@@ -69,6 +86,17 @@ export async function sendChat(sessionId, payload) {
 export async function getReport(lessonId) {
   if (!useMocks) return request(`/api/lessons/${lessonId}/report`)
   await delay(320); return structuredClone(report)
+}
+
+export async function getQuestions(lessonId, { limit = 20, difficulty } = {}) {
+  if (!useMocks) {
+    const params = new URLSearchParams({ limit: String(limit) })
+    if (difficulty) params.set('difficulty', difficulty)
+    return request(`/api/lessons/${lessonId}/questions?${params}`)
+  }
+  await delay(340)
+  const pool = difficulty ? practiceQuestions.filter((q) => q.difficulty === difficulty) : practiceQuestions
+  return structuredClone(pool).slice(0, limit)
 }
 
 export async function setLearnerLevel(_sessionId, nextLevel) {

@@ -1,0 +1,308 @@
+[
+  {
+    "lesson_title": "Python Variables and Types",
+    "chunk_index": 2,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "Which variable name follows Python's recommended naming convention?",
+    "options": [
+      "first_name",
+      "FirstName",
+      "first-name",
+      "2nd_name"
+    ],
+    "answer": "first_name",
+    "explanation": "Python convention uses snake_case: lowercase words separated by underscores. `first_name` follows that convention and also starts with a letter.",
+    "misconception": "Python variable names should use CamelCase or may begin with a digit.",
+    "source_quote": "The convention in Python is `snake_case`: lowercase words joined by underscores, such as `first_name`."
+  },
+  {
+    "lesson_title": "Python Variables and Types",
+    "chunk_index": 3,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "What does `type(3.14)` return?",
+    "options": [
+      "<class 'float'>",
+      "<class 'int'>",
+      "<class 'str'>",
+      "TypeError"
+    ],
+    "answer": "<class 'float'>",
+    "explanation": "The value `3.14` is a float, so Python's `type()` function reports the `float` class.",
+    "misconception": "Any numeric value has type `int`, even when it contains a decimal point.",
+    "source_quote": "You can ask any value its type with the built-in function `type(value)`, for example `type(3.14)` returns `<class 'float'>`."
+  },
+  {
+    "lesson_title": "Python Variables and Types",
+    "chunk_index": 4,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "Why is `x = 5` followed by `x = \"five\"` legal in Python?",
+    "options": [
+      "A variable name can refer to values of different types after reassignment.",
+      "Every variable permanently has the type of its first value.",
+      "Python converts every assigned value into text.",
+      "The name `x` is exempt from Python's type rules."
+    ],
+    "answer": "A variable name can refer to values of different types after reassignment.",
+    "explanation": "Python is dynamically typed: types belong to values, not variable names. Reassigning `x` can therefore make it refer first to an integer and later to a string.",
+    "misconception": "A variable's first assignment permanently fixes its type.",
+    "source_quote": "The same name can refer to an integer on one line and a string on the next: `x = 5` then `x = \"five\"` is perfectly legal."
+  },
+  {
+    "lesson_title": "Python Variables and Types",
+    "chunk_index": 5,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "What value does `str(42)` produce?",
+    "options": [
+      "The text \"42\"",
+      "The integer 42",
+      "The decimal 42.0",
+      "A TypeError"
+    ],
+    "answer": "The text \"42\"",
+    "explanation": "Calling `str()` casts the integer to a new string value, so `str(42)` produces the text \"42\".",
+    "misconception": "Casting with `str()` leaves the value as an integer.",
+    "source_quote": "`int(\"42\")` produces the integer `42`, `str(42)` produces the text `\"42\"`, and `float(\"3.5\")` produces `3.5`."
+  },
+  {
+    "lesson_title": "Python Variables and Types",
+    "chunk_index": 6,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "Which statement correctly distinguishes `None` from other Python values?",
+    "options": [
+      "`None` is not the same as `0`, an empty string, or `False`.",
+      "`None` is another way to write the integer `0`.",
+      "`None` and `False` are always interchangeable.",
+      "`None` is an empty string."
+    ],
+    "answer": "`None` is not the same as `0`, an empty string, or `False`.",
+    "explanation": "`None` is a distinct value of type `NoneType`; it deliberately represents the absence of a value and is not equal in meaning to zero, empty text, or false.",
+    "misconception": "All falsy-looking values represent the same thing as `None`.",
+    "source_quote": "It is its own type, `NoneType`, and it is not the same as `0`, an empty string, or `False`."
+  },
+  {
+    "lesson_title": "Python Numbers and Arithmetic",
+    "chunk_index": 4,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "Which pair of expressions splits `total_seconds` into whole minutes and leftover seconds?",
+    "options": [
+      "`total_seconds // 60` and `total_seconds % 60`",
+      "`total_seconds / 60` and `total_seconds // 60`",
+      "`total_seconds % 60` and `total_seconds / 60`",
+      "`total_seconds ** 60` and `total_seconds - 60`"
+    ],
+    "answer": "`total_seconds // 60` and `total_seconds % 60`",
+    "explanation": "Floor division gives the number of complete 60-second groups, while modulo gives the seconds left after those complete groups.",
+    "misconception": "True division or modulo gives the number of complete groups rather than a fractional quotient or remainder.",
+    "source_quote": "Floor division and modulo work together to break a value apart: `total_seconds // 60` gives whole minutes and `total_seconds % 60` gives the leftover seconds."
+  },
+  {
+    "lesson_title": "Python Strings",
+    "chunk_index": 2,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "Given `text = \"banana\"`, which statement keeps the result of replacing every `a` with `o`?",
+    "options": [
+      "`text = text.replace(\"a\", \"o\")`",
+      "`text.replace(\"a\", \"o\")`",
+      "`text[1] = \"o\"`",
+      "`replace(text, \"a\", \"o\")`"
+    ],
+    "answer": "`text = text.replace(\"a\", \"o\")`",
+    "explanation": "Strings are immutable, so `replace` returns a new string. Assigning that returned value back to `text` keeps the change.",
+    "misconception": "String methods edit the original string in place, so their returned value can be ignored.",
+    "source_quote": "This is why `text.replace(\"a\", \"b\")` has no effect unless you assign the result to something, as in `text = text.replace(\"a\", \"b\")`."
+  },
+  {
+    "lesson_title": "Python Booleans and Comparisons",
+    "chunk_index": 5,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "Which condition safely checks whether a possibly empty list `data` starts with `1`?",
+    "options": [
+      "`if data and data[0] == 1:`",
+      "`if data[0] == 1 and data:`",
+      "`if data or data[0] == 1:`",
+      "`if not data and data[0] == 1:`"
+    ],
+    "answer": "`if data and data[0] == 1:`",
+    "explanation": "When `data` is empty, the first operand is falsy, so `and` short-circuits and Python never evaluates the unsafe `data[0]` access.",
+    "misconception": "The order of conditions joined by `and` does not affect whether an unsafe expression is evaluated.",
+    "source_quote": "Writing `if data and data[0] == 1:` is safe because the second test is skipped when `data` is empty, avoiding an error on `data[0]`."
+  },
+  {
+    "lesson_title": "Python Lists and Tuples",
+    "chunk_index": 6,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "Which value can be used directly as a dictionary key for a grid coordinate?",
+    "options": [
+      "The tuple `(3, 4)`",
+      "The list `[3, 4]`",
+      "A list produced by `list((3, 4))`",
+      "Any list whose items are integers"
+    ],
+    "answer": "The tuple `(3, 4)`",
+    "explanation": "A tuple is immutable and therefore hashable, so it can represent a coordinate as a dictionary key. Lists are mutable and cannot be dictionary keys.",
+    "misconception": "A list can be a dictionary key as long as its current items are immutable integers.",
+    "source_quote": "Because tuples are immutable, they are hashable, which means a tuple can be used as a key in a dictionary or stored in a set. Lists cannot."
+  },
+  {
+    "lesson_title": "Python Dictionaries and Sets",
+    "chunk_index": 3,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "The key \"carol\" might be absent from `ages`. Which expression safely returns `0` when it is missing?",
+    "options": [
+      "`ages.get(\"carol\", 0)`",
+      "`ages[\"carol\"]`",
+      "`ages.get(0, \"carol\")`",
+      "`ages[\"carol\"] = 0`"
+    ],
+    "answer": "`ages.get(\"carol\", 0)`",
+    "explanation": "The second argument to `.get()` is the value returned when the requested key is absent, so this expression returns `0` without raising a `KeyError`.",
+    "misconception": "Square-bracket lookup safely supplies a default for a missing dictionary key.",
+    "source_quote": "To avoid crashing, use the `.get()` method, which returns `None` for a missing key, or a default you supply: `ages.get(\"carol\", 0)` returns `0` when Carol is absent."
+  },
+  {
+    "lesson_title": "Python Conditionals",
+    "chunk_index": 2,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "A chain first checks `if score >= 60:` and then checks `elif score >= 90:`. For `score = 95`, which branch runs?",
+    "options": [
+      "Only the `if score >= 60` branch",
+      "Only the `elif score >= 90` branch",
+      "Both branches",
+      "Neither branch"
+    ],
+    "answer": "Only the `if score >= 60` branch",
+    "explanation": "Both comparisons are true for 95, but Python takes the first true branch in an `if`/`elif` chain and skips the remaining branches.",
+    "misconception": "An `if`/`elif` chain chooses the most specific true condition regardless of order.",
+    "source_quote": "Python checks each in order and runs the body of the first one that is `True`, skipping all the rest."
+  },
+  {
+    "lesson_title": "Python Loops",
+    "chunk_index": 5,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "In `for number, item in enumerate(items, start=1):`, what number is paired with the first item?",
+    "options": [
+      "1",
+      "0",
+      "The length of `items`",
+      "The first item itself"
+    ],
+    "answer": "1",
+    "explanation": "Passing `start=1` tells `enumerate` to number the first item with 1 instead of its default starting value of 0.",
+    "misconception": "`enumerate` always begins at zero and its starting number cannot be changed.",
+    "source_quote": "You can start the count elsewhere with `enumerate(items, start=1)` when you want human-friendly numbering that begins at one."
+  },
+  {
+    "lesson_title": "Python Functions",
+    "chunk_index": 4,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "A function needs an optional list that should be fresh on every call. Which approach does the lesson recommend?",
+    "options": [
+      "Default the parameter to `None` and create a new list inside the function",
+      "Default the parameter to `[]` and reuse that list across calls",
+      "Store one list in a global variable",
+      "Require callers to pass the same shared list"
+    ],
+    "answer": "Default the parameter to `None` and create a new list inside the function",
+    "explanation": "A list used directly as a default is one shared mutable object. Using `None` as the default lets the function create an independent list for each call that needs one.",
+    "misconception": "A list written as a default parameter is recreated automatically for every function call.",
+    "source_quote": "The safe pattern is to default to `None` and create a fresh list inside the function."
+  },
+  {
+    "lesson_title": "Python Errors and Exceptions",
+    "chunk_index": 5,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "Which block should contain cleanup that must run whether the `try` body succeeds or raises an exception?",
+    "options": [
+      "The `finally` block",
+      "The `else` block",
+      "The `except` block only",
+      "The `try` block only"
+    ],
+    "answer": "The `finally` block",
+    "explanation": "A `finally` block always runs, so it is the appropriate place for mandatory cleanup such as closing a file or releasing a resource.",
+    "misconception": "An `else` block always runs after `try`, even when an exception occurs.",
+    "source_quote": "A `finally` block runs no matter what—whether an exception occurred or not—and is the right place for cleanup that must always happen, such as closing a file or releasing a resource."
+  },
+  {
+    "lesson_title": "Python Comprehensions",
+    "chunk_index": 5,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "You need the sum of the squares from 0 through 999,999 without first storing all one million squares. Which expression best meets that requirement?",
+    "options": [
+      "sum(n * n for n in range(1000000))",
+      "sum([n * n for n in range(1000000)])",
+      "[n * n for n in range(1000000)]",
+      "(n * n for n in range(1000000))"
+    ],
+    "answer": "sum(n * n for n in range(1000000))",
+    "explanation": "The expression inside `sum` is a generator expression, so it supplies each square on demand instead of materializing a list of one million values.",
+    "misconception": "Square brackets and parentheses have the same memory behavior in a comprehension-like expression.",
+    "source_quote": "Unlike a list comprehension, it does not build the whole result in memory at once; it produces each value on demand as you iterate."
+  },
+  {
+    "lesson_title": "Python Classes and Objects",
+    "chunk_index": 4,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "Every `Player` object needs its own score, and increasing one player's score must not affect another player. Where should the initial score be assigned?",
+    "options": [
+      "Assign `self.score = 0` inside `__init__`.",
+      "Assign `score = 0` directly in the class body.",
+      "Assign `Player.score = 0` after creating each player.",
+      "Declare `global score` inside `__init__`."
+    ],
+    "answer": "Assign `self.score = 0` inside `__init__`.",
+    "explanation": "An attribute assigned through `self` belongs to that particular instance, so each player receives an independent score.",
+    "misconception": "A class attribute automatically gives every instance an independent copy of mutable state.",
+    "source_quote": "An attribute assigned directly in the class body, outside any method, is a class attribute shared by every instance, whereas one assigned through `self` is unique to each object."
+  },
+  {
+    "lesson_title": "Python Modules and Imports",
+    "chunk_index": 6,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "A file defines reusable functions and also calls `main()`. How should that call be written so it runs when the file is executed directly but not when another file imports it?",
+    "options": [
+      "if __name__ == \"__main__\": main()",
+      "if __name__ == \"module\": main()",
+      "main()",
+      "if __name__ != \"__main__\": main()"
+    ],
+    "answer": "if __name__ == \"__main__\": main()",
+    "explanation": "When Python executes the file directly, `__name__` is `\"__main__\"`; when another file imports it, `__name__` is the module's name, so the guarded call is skipped.",
+    "misconception": "Importing a module and executing its file directly always give `__name__` the same value.",
+    "source_quote": "This is why the common idiom `if __name__ == \"__main__\":` guards code that should run only when the file is executed as a script, not when it is imported."
+  },
+  {
+    "lesson_title": "Python Files and Input/Output",
+    "chunk_index": 2,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "Why is `with open(\"data.txt\") as f:` preferred when code inside the block might raise an exception?",
+    "options": [
+      "The file is closed automatically when the block ends, even after an exception.",
+      "The file is reopened automatically after an exception.",
+      "The file's contents are restored automatically after an exception.",
+      "Exceptions inside the block are always ignored."
+    ],
+    "answer": "The file is closed automatically when the block ends, even after an exception.",
+    "explanation": "The context manager performs file cleanup when control leaves the `with` block, including when an exception interrupts the block.",
+    "misconception": "An exception prevents a file opened in a `with` block from being closed.",
+    "source_quote": "The `with` statement guarantees that the file is closed automatically when the block ends, even if an exception is raised inside it, so you never leak an open file handle."
+  }
+]

@@ -78,6 +78,27 @@ class Message(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), server_default=func.now())
 
 
+class PracticeQuestion(Base):
+    __tablename__ = "practice_questions"
+    __table_args__ = (
+        Index("ix_practice_questions_lesson", "lesson_id"),
+        Index("ix_practice_questions_chunk", "chunk_id"),
+    )
+    id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    lesson_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False)
+    chunk_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("chunks.id", ondelete="CASCADE"), nullable=False)
+    # kind: "mcq" carries options; "short_answer" leaves options null.
+    kind: Mapped[str] = mapped_column(Text, nullable=False, default="mcq")
+    difficulty: Mapped[LearnerLevel] = mapped_column(Enum(LearnerLevel, name="learner_level", create_type=False), default=LearnerLevel.beginner)
+    prompt: Mapped[str] = mapped_column(Text, nullable=False)
+    options: Mapped[list[str] | None] = mapped_column(JSON, nullable=True)
+    answer: Mapped[str] = mapped_column(Text, nullable=False)
+    explanation: Mapped[str] = mapped_column(Text, nullable=False)
+    misconception: Mapped[str | None] = mapped_column(Text, nullable=True)
+    source_quote: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class Misconception(Base):
     __tablename__ = "misconceptions"
     __table_args__ = (Index("ix_misconceptions_session_status", "session_id", "status"), Index("ix_misconceptions_lesson", "lesson_id"))

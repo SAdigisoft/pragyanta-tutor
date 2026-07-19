@@ -422,9 +422,9 @@ def process_chat(db: Session, session: LearningSession, student_text: str) -> di
         open_item.status = status
         open_item.resolved_at = datetime.now(timezone.utc) if status == MisconceptionStatus.resolved else None
         if status == MisconceptionStatus.resolved:
-            content = "Exactly. A tuple does not support item assignment because it is immutable. You've got the key difference."
+            content = turn.answer.strip() or "Exactly. Your explanation matches the lesson evidence. You've got the key idea."
         else:
-            content = "Let's leave this one open for now. A tuple is fixed after creation, while a list can change. We can return to it later."
+            content = turn.answer.strip() or "Let's leave this idea open for now and return to the lesson evidence before trying another example."
         add_tutor(MessageType.verdict, content, verdict=status)
         update = {"description": open_item.description, "status": status.value}
     elif turn.misconception_detected and turn.misconception:

@@ -1,0 +1,70 @@
+[
+  {
+    "lesson_title": "Python Comprehensions",
+    "chunk_index": 5,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "You need the sum of the squares from 0 through 999,999 without first storing all one million squares. Which expression best meets that requirement?",
+    "options": [
+      "sum(n * n for n in range(1000000))",
+      "sum([n * n for n in range(1000000)])",
+      "[n * n for n in range(1000000)]",
+      "(n * n for n in range(1000000))"
+    ],
+    "answer": "sum(n * n for n in range(1000000))",
+    "explanation": "The expression inside `sum` is a generator expression, so it supplies each square on demand instead of materializing a list of one million values.",
+    "misconception": "Square brackets and parentheses have the same memory behavior in a comprehension-like expression.",
+    "source_quote": "Unlike a list comprehension, it does not build the whole result in memory at once; it produces each value on demand as you iterate."
+  },
+  {
+    "lesson_title": "Python Classes and Objects",
+    "chunk_index": 4,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "Every `Player` object needs its own score, and increasing one player's score must not affect another player. Where should the initial score be assigned?",
+    "options": [
+      "Assign `self.score = 0` inside `__init__`.",
+      "Assign `score = 0` directly in the class body.",
+      "Assign `Player.score = 0` after creating each player.",
+      "Declare `global score` inside `__init__`."
+    ],
+    "answer": "Assign `self.score = 0` inside `__init__`.",
+    "explanation": "An attribute assigned through `self` belongs to that particular instance, so each player receives an independent score.",
+    "misconception": "A class attribute automatically gives every instance an independent copy of mutable state.",
+    "source_quote": "An attribute assigned directly in the class body, outside any method, is a class attribute shared by every instance, whereas one assigned through `self` is unique to each object."
+  },
+  {
+    "lesson_title": "Python Modules and Imports",
+    "chunk_index": 6,
+    "kind": "mcq",
+    "difficulty": "intermediate",
+    "prompt": "A file defines reusable functions and also calls `main()`. How should that call be written so it runs when the file is executed directly but not when another file imports it?",
+    "options": [
+      "if __name__ == \"__main__\": main()",
+      "if __name__ == \"module\": main()",
+      "main()",
+      "if __name__ != \"__main__\": main()"
+    ],
+    "answer": "if __name__ == \"__main__\": main()",
+    "explanation": "When Python executes the file directly, `__name__` is `\"__main__\"`; when another file imports it, `__name__` is the module's name, so the guarded call is skipped.",
+    "misconception": "Importing a module and executing its file directly always give `__name__` the same value.",
+    "source_quote": "This is why the common idiom `if __name__ == \"__main__\":` guards code that should run only when the file is executed as a script, not when it is imported."
+  },
+  {
+    "lesson_title": "Python Files and Input/Output",
+    "chunk_index": 2,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "prompt": "Why is `with open(\"data.txt\") as f:` preferred when code inside the block might raise an exception?",
+    "options": [
+      "The file is closed automatically when the block ends, even after an exception.",
+      "The file is reopened automatically after an exception.",
+      "The file's contents are restored automatically after an exception.",
+      "Exceptions inside the block are always ignored."
+    ],
+    "answer": "The file is closed automatically when the block ends, even after an exception.",
+    "explanation": "The context manager performs file cleanup when control leaves the `with` block, including when an exception interrupts the block.",
+    "misconception": "An exception prevents a file opened in a `with` block from being closed.",
+    "source_quote": "The `with` statement guarantees that the file is closed automatically when the block ends, even if an exception is raised inside it, so you never leak an open file handle."
+  }
+]

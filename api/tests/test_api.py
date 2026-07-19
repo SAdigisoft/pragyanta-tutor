@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 from io import BytesIO
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 from fastapi.testclient import TestClient
 from reportlab.pdfgen import canvas
+from sqlalchemy import select
 
 from api import tutor
+from api.database import SessionLocal
+from api.models import Chunk, LearnerLevel, PracticeQuestion
 
 
 def _assert_error(response, expected_status: int) -> None:
@@ -31,14 +34,15 @@ def test_health(client: TestClient) -> None:
 
 
 def test_create_and_list_text_lesson(client: TestClient, lesson: dict) -> None:
-    assert set(lesson) == {"lesson_id", "title", "chunk_count"}
+    assert set(lesson) == {"lesson_id", "title", "created_at", "chunk_count", "question_count"}
     assert lesson["title"] == "Contract test: lists and tuples"
     assert lesson["chunk_count"] >= 1
 
     response = client.get("/api/lessons")
     assert response.status_code == 200
     listed = next(row for row in response.json() if row["lesson_id"] == lesson["lesson_id"])
-    assert set(listed) == {"lesson_id", "title", "created_at", "chunk_count"}
+    assert set(listed) == {"lesson_id", "title", "created_at", "chunk_count", "question_count"}
+    assert listed["question_count"] == 0
 
 
 def test_create_pdf_lesson(client: TestClient) -> None:
@@ -72,6 +76,11 @@ def test_create_session_and_reject_bad_lesson(client: TestClient, lesson: dict) 
 
 
 def test_update_session_level(client: TestClient, session: dict) -> None:
+    detail = client.get(f"/api/sessions/{session['session_id']}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["lesson_title"] == "Contract test: lists and tuples"
+    assert detail.json()["learner_level"] == "beginner"
+
     response = client.patch(
         f"/api/sessions/{session['session_id']}",
         json={"learner_level": "intermediate"},
@@ -81,6 +90,45 @@ def test_update_session_level(client: TestClient, session: dict) -> None:
         "session_id": session["session_id"],
         "learner_level": "intermediate",
     }
+
+
+def test_list_sessions_for_sidebar(client: TestClient, lesson: dict, session: dict) -> None:
+    response = client.get("/api/sessions")
+    assert response.status_code == 200, response.text
+    listed = next(row for row in response.json() if row["session_id"] == session["session_id"])
+    assert listed == {
+        "session_id": session["session_id"],
+        "lesson_id": lesson["lesson_id"],
+        "lesson_title": lesson["title"],
+        "learner_level": "beginner",
+        "last_message": None,
+        "created_at": listed["created_at"],
+    }
+
+
+def test_practice_questions_include_exact_source_evidence(client: TestClient, lesson: dict) -> None:
+    lesson_id = UUID(lesson["lesson_id"])
+    with SessionLocal.begin() as db:
+        chunk = db.scalar(select(Chunk).where(Chunk.lesson_id == lesson_id))
+        source_quote = "A list is mutable, meaning its contents can be changed after creation."
+        db.add(PracticeQuestion(
+            lesson_id=lesson_id,
+            chunk_id=chunk.id,
+            kind="mcq",
+            difficulty=LearnerLevel.beginner,
+            prompt="Which collection can change after creation?",
+            options=["A list", "A tuple", "Neither", "Both are fixed"],
+            answer="A list",
+            explanation="The lesson identifies lists as mutable.",
+            misconception="Confusing list and tuple mutability.",
+            source_quote=source_quote,
+        ))
+
+    response = client.get(f"/api/lessons/{lesson['lesson_id']}/questions")
+    assert response.status_code == 200, response.text
+    question = response.json()[0]
+    assert question["answer"] in question["options"]
+    assert question["source_quote"] == source_quote
 
 
 def test_question_chat_has_ordered_messages_and_citation(client: TestClient, session: dict) -> None:

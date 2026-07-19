@@ -1,3 +1,5 @@
+import json
+from pathlib import Path
 from types import SimpleNamespace
 from uuid import uuid4
 
@@ -7,12 +9,81 @@ import pytest
 from api import rag, tutor
 from api.ai import get_ai_provider
 from api.schemas import TutorTurn
+from api.scripts import generate_questions
+
+
+def test_committed_question_bank_passes_grounding_validation() -> None:
+    api_dir = Path(__file__).resolve().parents[1]
+    records = json.loads((api_dir / "question_bank.json").read_text(encoding="utf-8"))
+    lesson_chunks = {}
+    for lesson_path in (api_dir / "curriculum").glob("*.md"):
+        lesson_text = lesson_path.read_text(encoding="utf-8")
+        lesson_title = lesson_text.splitlines()[0].removeprefix("# ").strip()
+        lesson_chunks[lesson_title] = {
+            chunk.chunk_index: chunk.content for chunk in rag.chunk_text(lesson_text)
+        }
+    for record in records:
+        candidate = generate_questions.GeneratedQuestion.model_validate(record)
+        chunks = lesson_chunks[record["lesson_title"]]
+        assert generate_questions.validate_question(candidate, chunks[record["chunk_index"]]) is None
 
 
 def test_citation_display_text_removes_markdown_structure() -> None:
     assert tutor._clean_citation_text("## §1 What lists and tuples are") == "What lists and tuples are"
     assert tutor._clean_citation_text("1. Lists are mutable") == "Lists are mutable"
     assert tutor._clean_citation_text("- Tuples are immutable") == "Tuples are immutable"
+
+
+def test_question_source_quote_must_be_an_exact_substring() -> None:
+    candidate = generate_questions.GeneratedQuestion(
+        difficulty="beginner",
+        prompt="What is stored?",
+        options=["A value", "A file", "A loop", "Nothing"],
+        answer="A value",
+        explanation="The passage says so.",
+        misconception="Confusing a variable with a file.",
+        source_quote="a variable stores a value",
+    )
+    assert generate_questions.validate_question(candidate, "A variable stores a value.") == "source_quote is not verbatim in the chunk"
+    candidate.source_quote = "A variable stores a value in memory"
+    assert generate_questions.validate_question(candidate, "A variable stores a value in memory.") is None
+
+
+def test_question_rejects_heading_only_quote() -> None:
+    candidate = generate_questions.GeneratedQuestion(
+        difficulty="beginner",
+        prompt="What does None represent?",
+        options=["No value", "Zero", "False", "An empty string"],
+        answer="No value",
+        explanation="None represents the deliberate absence of a value.",
+        misconception="None is the same as zero.",
+        source_quote="§6 None, the absence of a value",
+    )
+    chunk = "§6 None, the absence of a value\n\nNone represents no value."
+    assert "heading" in generate_questions.validate_question(candidate, chunk)
+
+
+def test_question_rejects_html_escaped_text() -> None:
+    quote = "The type function returns the type of the value supplied to it."
+    candidate = generate_questions.GeneratedQuestion(
+        difficulty="beginner",
+        prompt="What is the result?",
+        options=["&lt;class 'int'&gt;", "str", "float", "bool"],
+        answer="&lt;class 'int'&gt;",
+        explanation="The value is an integer.",
+        misconception="The value is text.",
+        source_quote=quote,
+    )
+    assert "HTML-escaped" in generate_questions.validate_question(candidate, quote)
+
+
+def test_openai_question_generation_uses_the_openai_adapter(monkeypatch: pytest.MonkeyPatch) -> None:
+    expected = []
+    openai_generate = lambda *_args: expected
+    ollama_generate = pytest.fail
+    monkeypatch.setattr(generate_questions, "_openai_generate", openai_generate)
+    monkeypatch.setattr(generate_questions, "_ollama_generate", ollama_generate)
+    assert generate_questions.generate_for_chunk("source", 1, "openai", "gpt-test") is expected
 
 
 def test_provider_defaults_to_mock(monkeypatch: pytest.MonkeyPatch) -> None:

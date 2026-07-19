@@ -19,7 +19,12 @@ export default function Report() {
       <Link className="report-crumb" to="/?role=teacher"><BookIcon size={23} /><span>›</span>{data?.lesson_title || 'Python Lists and Tuples'}</Link>
       <section className="report-title"><div><span className="overline"><i />Teacher evidence</span><h1>Misconception report</h1></div></section>
       {error ? <div className="report-empty error-card"><h2>Report unavailable</h2><p>{error}</p></div> : !data ? <div className="report-empty">Loading learning gaps…</div> : data.misconceptions.length === 0 ? <div className="report-empty"><span className="empty-check">✓</span><h2>No misconceptions detected yet</h2><p>Students haven’t hit any snags. New learning gaps will appear here when the tutor detects them.</p></div> : <>
-        <section className="report-summary-line" aria-label="Misconception summary"><span><strong>{data.summary.total}</strong> misconceptions detected</span><i>·</i><span className="resolved"><strong>{data.summary.resolved}</strong> resolved</span><i>·</i><span className="unresolved"><strong>{data.summary.unresolved}</strong> unresolved</span><i>·</i><span className="open"><strong>{data.summary.open}</strong> open</span></section>
+        <section className="report-stats" aria-label="Misconception summary">
+          <div className="rstat total"><strong>{data.summary.total}</strong><small>detected</small></div>
+          <div className="rstat resolved"><strong>{data.summary.resolved}</strong><small>resolved</small></div>
+          <div className="rstat unresolved"><strong>{data.summary.unresolved}</strong><small>unresolved</small></div>
+          <div className="rstat open"><strong>{data.summary.open}</strong><small>open</small></div>
+        </section>
         <div className="report-table-wrap"><table><thead><tr><th>Misconception</th><th>Student’s words</th><th>Status</th><th>Detected</th><th>Resolved</th></tr></thead><tbody>{data.misconceptions.map((item, index) => <tr key={item.id || `${item.detected_at}-${index}`}><td><strong>{item.description}</strong></td><td><blockquote>“{item.evidence}”</blockquote></td><td><span className={`status-badge ${item.status}`}><i />{item.status}</span></td><td>{date(item.detected_at)}</td><td>{date(item.resolved_at)}</td></tr>)}</tbody></table></div>
         <Link className="back-button" to="/?role=teacher">← Back to lessons</Link>
       </>}

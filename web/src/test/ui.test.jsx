@@ -1,11 +1,24 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { MemoryRouter, Route, Routes } from 'react-router-dom'
+import App from '../App'
 import ChatMessage from '../components/ChatMessage'
 import LevelToggle from '../components/LevelToggle'
 import Report from '../pages/Report'
+import Practice from '../pages/Practice'
 
 describe('core frontend rendering', () => {
+  it('provides persistent product navigation and tutoring history access', async () => {
+    render(<MemoryRouter initialEntries={['/']}><App /></MemoryRouter>)
+
+    expect(screen.getByRole('navigation', { name: 'Main navigation' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Lesson library' })).toHaveClass('active')
+    expect(screen.getByRole('link', { name: 'Practice' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Learning reports' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'New tutoring chat' })).toBeInTheDocument()
+    expect(await screen.findByText('Your tutoring conversations will appear here.')).toBeInTheDocument()
+  })
+
   it('makes learner-level selection accessible and interactive', async () => {
     const user = userEvent.setup()
     const onChange = vi.fn()
@@ -42,5 +55,16 @@ describe('core frontend rendering', () => {
     for (const status of ['resolved', 'unresolved', 'open']) {
       expect(screen.getByText(status, { selector: '.status-badge' })).toHaveClass('status-badge', status)
     }
+  })
+
+  it('shows exact source evidence after checking a practice answer', async () => {
+    const user = userEvent.setup()
+    render(<MemoryRouter initialEntries={['/practice/demo-lesson']}><Routes><Route path="/practice/:lessonId" element={<Practice />} /></Routes></MemoryRouter>)
+
+    expect(await screen.findByText('What is the key difference between a list and a tuple in Python?')).toBeInTheDocument()
+    await user.click(screen.getByRole('radio', { name: /A list is mutable; a tuple is immutable/ }))
+    await user.click(screen.getByRole('button', { name: 'Check answer' }))
+    expect(screen.getByText('Source evidence')).toBeInTheDocument()
+    expect(screen.getByText(/A list is mutable, meaning its contents can be changed/)).toBeInTheDocument()
   })
 })

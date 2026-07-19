@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { createLesson, createSession, getLessons } from '../api'
 import DemoSwitcher from '../components/DemoSwitcher'
 import Header from '../components/Header'
-import { ArrowIcon, BookIcon, CheckIcon, FileIcon, ShieldIcon, UploadIcon, UserIcon } from '../components/Icons'
+import { ArrowIcon, BookIcon, CheckIcon, FileIcon, ShieldIcon, TargetIcon, UploadIcon, UserIcon } from '../components/Icons'
 
 const formatDate = (date) => new Intl.DateTimeFormat('en', { day: 'numeric', month: 'short', year: 'numeric' }).format(new Date(date))
 
@@ -52,10 +52,14 @@ export default function Landing() {
     <Header mode="teacher" />
     <main className="landing-main">
       <section className="hero-copy"><div><div className="overline"><span />Evidence-based teaching</div><h1>Teach from sources you trust.</h1><p>Pragyanta answers only from teacher-approved material, so every explanation stays grounded in your lesson.</p></div><aside className="hero-promise"><span><ShieldIcon /></span><p>Answers stay grounded in<br />teacher-approved material.</p></aside></section>
-      <div className="landing-workspace">
-      <section className="library-section">
+      {!loading && lessons.length > 0 && <section className="stat-strip" aria-label="Curriculum at a glance">
+        <div className="stat-tile"><span className="stat-icon"><BookIcon size={19} /></span><div><strong>{lessons.length}</strong><small>{lessons.length === 1 ? 'lesson' : 'lessons'} in the library</small></div></div>
+        <div className="stat-tile"><span className="stat-icon"><TargetIcon size={19} /></span><div><strong>{lessons.reduce((sum, l) => sum + (l.question_count || 0), 0).toLocaleString()}</strong><small>grounded practice questions</small></div></div>
+        <div className="stat-tile"><span className="stat-icon"><ShieldIcon size={19} /></span><div><strong>100%</strong><small>answers cited to your material</small></div></div>
+      </section>}
+      <section className="library-section" id="lessons">
         <div className="section-heading"><div><h2>Your lessons</h2><span className="heading-rule" /></div><p>{lessons.length} {lessons.length === 1 ? 'lesson' : 'lessons'} ready</p></div>
-        {loading ? <div className="skeleton-card" aria-live="polite">Loading your lessons…</div> : error && !lessons.length ? <div className="empty-card error-card"><h3>Lessons are unavailable</h3><p>{error}</p></div> : lessons.length === 0 ? <div className="empty-card"><div className="empty-icon"><BookIcon /></div><h3>Your lesson library is ready</h3><p>Upload a PDF or paste lesson text to create your first evidence-based tutor.</p><button className="text-button" onClick={() => document.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}>Add your first lesson <ArrowIcon /></button></div> : <div className="lesson-grid">{lessons.map((lesson) => <article className="lesson-card" key={lesson.lesson_id}><div className="lesson-card-body"><div className="lesson-document"><FileIcon size={52} /></div><div><span className="lesson-label">Teacher-approved lesson</span><h3>{lesson.title}</h3><div className="lesson-meta"><span><BookIcon size={17} />{lesson.chunk_count} source sections</span><span>{formatDate(lesson.created_at)}</span></div></div></div><div className="lesson-actions"><button className="primary-button" onClick={() => startLesson(lesson.lesson_id)}><UserIcon />Open as student <ArrowIcon /></button><button className="secondary-button" onClick={() => navigate(`/report/${lesson.lesson_id}?role=teacher`)}>View report</button></div></article>)}</div>}
+        {loading ? <div className="skeleton-card" aria-live="polite">Loading your lessons…</div> : error && !lessons.length ? <div className="empty-card error-card"><h3>Lessons are unavailable</h3><p>{error}</p></div> : lessons.length === 0 ? <div className="empty-card"><div className="empty-icon"><BookIcon /></div><h3>Your lesson library is ready</h3><p>Upload a PDF or paste lesson text to create your first evidence-based tutor.</p><button className="text-button" onClick={() => document.getElementById('upload')?.scrollIntoView({ behavior: 'smooth' })}>Add your first lesson <ArrowIcon /></button></div> : <div className="lesson-grid">{lessons.map((lesson) => <article className="lesson-card" key={lesson.lesson_id}><div className="lesson-card-top"><div className="lesson-document"><FileIcon size={30} /></div><span className="lesson-label">Teacher-approved lesson</span></div><h3>{lesson.title}</h3><div className="lesson-meta"><span><BookIcon size={16} />{lesson.chunk_count} sections</span>{lesson.question_count > 0 && <span><i />{lesson.question_count} practice questions</span>}<span className="lesson-date">{formatDate(lesson.created_at)}</span></div><div className="lesson-actions"><button className="primary-button wide" onClick={() => startLesson(lesson.lesson_id)}><UserIcon />Open as student <ArrowIcon /></button><div className="lesson-subactions"><button className="secondary-button" onClick={() => navigate(`/practice/${lesson.lesson_id}?role=student`)}><TargetIcon size={15} />Practice</button><button className="secondary-button" onClick={() => navigate(`/report/${lesson.lesson_id}?role=teacher`)}>Report</button></div></div></article>)}</div>}
       </section>
       <section className="upload-section" id="upload">
         <div className="section-heading"><div><h2>Upload lesson</h2><span className="heading-rule" /></div><p>PDF or text</p></div>
@@ -67,7 +71,6 @@ export default function Landing() {
           {uploadState === 'success' ? <div className="upload-success" role="status"><CheckIcon /> Lesson processed and ready for students.</div> : !['uploading', 'processing'].includes(uploadState) && <button className="primary-button full" onClick={upload}>Upload lesson <ArrowIcon /></button>}
         </div>
       </section>
-      </div>
     </main>
     <footer><span>Pragyanta</span><p>Answers grounded in evidence. Understanding verified.</p></footer>
     <DemoSwitcher page="landing" value={demoState} onChange={changeDemo} />
