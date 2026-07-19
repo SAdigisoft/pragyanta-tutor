@@ -60,10 +60,11 @@ def scenario_session_id(scenario: str, suffix: str = "main") -> uuid.UUID:
     return stable_id(f"session:{scenario}:{suffix}")
 
 
-def remove_demo_data(db: Session) -> int:
-    """Remove only the lesson whose stable UUID is reserved for these tools."""
-    result = db.execute(delete(Lesson).where(Lesson.id == DEMO_LESSON_ID))
-    return result.rowcount or 0
+def remove_demo_data(db: Session) -> tuple[int, int]:
+    """Remove tagged demo sessions and the lesson UUID reserved for scenarios."""
+    sessions = db.execute(delete(LearningSession).where(LearningSession.is_demo.is_(True)))
+    lessons = db.execute(delete(Lesson).where(Lesson.id == DEMO_LESSON_ID))
+    return (sessions.rowcount or 0), (lessons.rowcount or 0)
 
 
 def create_lesson(db: Session) -> tuple[Lesson, list[Chunk]]:
@@ -107,6 +108,7 @@ def create_session(
         id=scenario_session_id(scenario, suffix),
         lesson_id=DEMO_LESSON_ID,
         learner_level=learner_level,
+        is_demo=True,
         created_at=BASE_TIME + timedelta(minutes=minute),
     )
     db.add(learning_session)

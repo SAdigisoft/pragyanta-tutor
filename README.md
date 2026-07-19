@@ -106,7 +106,7 @@ docker compose exec api python -m api.scripts.load_scenario off-topic
 docker compose exec api python -m api.scripts.load_scenario report
 ```
 
-Remove deterministic demo data only:
+Remove tagged guided-demo sessions and deterministic scenario data only. Ordinary learner sessions and user-created lessons are retained:
 
 ```powershell
 docker compose exec api python -m api.scripts.reset_demo_data
@@ -127,17 +127,17 @@ npm --prefix web run build
 The smoke journey verifies health → seed lesson → session → tutor turn → report:
 
 ```powershell
-.\smoke.ps1 http://localhost:8000
+.\smoke.ps1 http://localhost:8000 -ResetDemoData
 ```
 
 On macOS/Linux:
 
 ```bash
 chmod +x smoke.sh
-./smoke.sh http://localhost:8000
+./smoke.sh http://localhost:8000 --reset-demo-data
 ```
 
-The same command accepts a deployed API URL and should be run immediately before recording the demo.
+For a deployed API, omit the local Docker cleanup option and pass the public API URL: `.\smoke.ps1 https://your-api.example`. Run the reset-enabled command only against the local Docker environment.
 
 ## Enable the real OpenAI tutor later
 

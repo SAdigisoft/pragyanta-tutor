@@ -28,6 +28,7 @@ class LessonTextCreate(BaseModel):
 class SessionCreate(BaseModel):
     lesson_id: str
     learner_level: Literal["beginner", "intermediate"] = "beginner"
+    is_demo: bool = False
 
 
 class SessionLevelUpdate(BaseModel):
@@ -36,4 +37,3 @@ class SessionLevelUpdate(BaseModel):
 
 class ChatCreate(BaseModel):
     message: str = Field(min_length=1, max_length=4000)
-

@@ -16,12 +16,15 @@ from api.dev_data.common import DEMO_LESSON_ID, remove_demo_data  # noqa: E402
 def main() -> int:
     try:
         with SessionLocal.begin() as db:
-            removed = remove_demo_data(db)
+            removed_sessions, removed_lessons = remove_demo_data(db)
     except Exception as exc:
         print(f"Failed to reset demo data: {exc}", file=sys.stderr)
         return 1
-    print(f"Demo reset complete. Removed {removed} lesson(s) with reserved ID {DEMO_LESSON_ID}.")
-    print("Related chunks, sessions, messages, and misconceptions were removed by database cascades.")
+    print(
+        f"Demo reset complete. Removed {removed_sessions} tagged demo session(s) and "
+        f"{removed_lessons} scenario lesson(s) with reserved ID {DEMO_LESSON_ID}."
+    )
+    print("User-created lessons and ordinary learner sessions were retained.")
     return 0
 
 

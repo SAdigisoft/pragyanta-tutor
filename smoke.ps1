@@ -1,5 +1,6 @@
 param(
-    [string]$BaseUrl = "http://localhost:8000"
+    [string]$BaseUrl = "http://localhost:8000",
+    [switch]$ResetDemoData
 )
 
 $ErrorActionPreference = "Stop"
@@ -9,10 +10,19 @@ function Invoke-Step {
     param([string]$Label, [scriptblock]$Action)
     Write-Host $Label
     try { & $Action } catch {
-        Write-Error "Smoke test failed: $($_.Exception.Message)"
-        exit 1
+        throw "Smoke test failed: $($_.Exception.Message)"
     }
 }
+
+function Reset-DemoRecords {
+    Write-Host "Resetting tagged demo records..."
+    docker compose exec -T api python -m api.scripts.reset_demo_data
+    if ($LASTEXITCODE -ne 0) { throw "Demo reset command failed" }
+}
+
+if ($ResetDemoData) { Reset-DemoRecords }
+
+try {
 
 Invoke-Step "[1/7] Health" {
     $script:health = Invoke-RestMethod -Uri "$BaseUrl/health"
@@ -26,7 +36,7 @@ Invoke-Step "[2/7] Showcase lesson" {
 }
 
 Invoke-Step "[3/7] Student session" {
-    $body = @{ lesson_id = $lesson.lesson_id; learner_level = "beginner" } | ConvertTo-Json
+    $body = @{ lesson_id = $lesson.lesson_id; learner_level = "beginner"; is_demo = $true } | ConvertTo-Json
     $script:session = Invoke-RestMethod -Method Post -Uri "$BaseUrl/api/sessions" -ContentType "application/json" -Body $body
     if (-not $session.session_id) { throw "Session response had no session_id" }
 }
@@ -59,3 +69,6 @@ Invoke-Step "[7/7] Stored teacher report" {
 Write-Host "PASS Pragyanta smoke journey completed at $BaseUrl" -ForegroundColor Green
 Write-Host "lesson_id=$($lesson.lesson_id)"
 Write-Host "session_id=$($session.session_id)"
+} finally {
+    if ($ResetDemoData) { Reset-DemoRecords }
+}

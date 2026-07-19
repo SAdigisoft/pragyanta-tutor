@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from api import tutor
 from api.database import SessionLocal
-from api.models import Chunk, LearnerLevel, PracticeQuestion
+from api.models import Chunk, LearnerLevel, LearningSession, PracticeQuestion
 
 
 def _assert_error(response, expected_status: int) -> None:
@@ -74,6 +74,25 @@ def test_create_session_and_reject_bad_lesson(client: TestClient, lesson: dict) 
         json={"lesson_id": str(uuid4()), "learner_level": "beginner"},
     )
     _assert_error(missing, 404)
+
+
+def test_create_session_marks_only_explicit_demo_sessions(client: TestClient, lesson: dict) -> None:
+    regular = client.post(
+        "/api/sessions",
+        json={"lesson_id": lesson["lesson_id"], "learner_level": "beginner"},
+    )
+    demo = client.post(
+        "/api/sessions",
+        json={"lesson_id": lesson["lesson_id"], "learner_level": "beginner", "is_demo": True},
+    )
+    assert regular.status_code == 201, regular.text
+    assert demo.status_code == 201, demo.text
+
+    with SessionLocal() as db:
+        regular_row = db.get(LearningSession, UUID(regular.json()["session_id"]))
+        demo_row = db.get(LearningSession, UUID(demo.json()["session_id"]))
+        assert regular_row.is_demo is False
+        assert demo_row.is_demo is True
 
 
 def test_update_session_level(client: TestClient, lesson: dict, session: dict) -> None:

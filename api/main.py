@@ -134,7 +134,11 @@ def create_session(payload: SessionCreate, db: Session = Depends(get_db)):
         raise HTTPException(404, "Lesson not found") from exc
     if not db.get(Lesson, lesson_id):
         raise HTTPException(404, "Lesson not found")
-    session = LearningSession(lesson_id=lesson_id, learner_level=payload.learner_level)
+    session = LearningSession(
+        lesson_id=lesson_id,
+        learner_level=payload.learner_level,
+        is_demo=payload.is_demo,
+    )
     db.add(session)
     db.commit()
     return {"session_id": str(session.id)}

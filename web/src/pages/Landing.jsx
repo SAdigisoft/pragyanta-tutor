@@ -43,10 +43,11 @@ export default function Landing() {
       .finally(() => setLoading(false));
   }, []);
 
-  const startLesson = async (lessonId) => {
+  const startLesson = async (lessonId, isDemo = false) => {
     const result = await createSession({
       lesson_id: lessonId,
       learner_level: "beginner",
+      is_demo: isDemo,
     });
     navigate(`/learn/${result.session_id}?role=student`);
   };
@@ -240,7 +241,7 @@ export default function Landing() {
                   <div className="lesson-actions">
                     <button
                       className="primary-button wide"
-                      onClick={() => startLesson(lesson.lesson_id)}
+                      onClick={() => startLesson(lesson.lesson_id, Boolean(lesson.featured_prompt))}
                     >
                       <UserIcon />
                       {lesson.featured_prompt

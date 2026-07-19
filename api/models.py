@@ -58,10 +58,11 @@ class Chunk(Base):
 
 class LearningSession(Base):
     __tablename__ = "sessions"
-    __table_args__ = (Index("ix_sessions_lesson", "lesson_id"),)
+    __table_args__ = (Index("ix_sessions_lesson", "lesson_id"), Index("ix_sessions_is_demo", "is_demo"))
     id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     lesson_id: Mapped[uuid.UUID] = mapped_column(UUID(as_uuid=True), ForeignKey("lessons.id", ondelete="CASCADE"), nullable=False)
     learner_level: Mapped[LearnerLevel] = mapped_column(Enum(LearnerLevel, name="learner_level"), default=LearnerLevel.beginner)
+    is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False, server_default="false")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

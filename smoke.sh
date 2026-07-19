@@ -3,8 +3,30 @@ set -euo pipefail
 
 BASE_URL="${1:-http://localhost:8000}"
 BASE_URL="${BASE_URL%/}"
+RESET_DEMO_DATA="${2:-}"
 SMOKE_TMP="$(mktemp -d)"
-trap 'rm -rf -- "$SMOKE_TMP"' EXIT
+
+reset_demo_records() {
+  echo "Resetting tagged demo records..."
+  docker compose exec -T api python -m api.scripts.reset_demo_data
+}
+
+cleanup() {
+  local status=$?
+  rm -rf -- "$SMOKE_TMP"
+  if [[ "$RESET_DEMO_DATA" == "--reset-demo-data" ]]; then
+    reset_demo_records || status=$?
+  fi
+  exit "$status"
+}
+trap cleanup EXIT
+
+if [[ "$RESET_DEMO_DATA" == "--reset-demo-data" ]]; then
+  reset_demo_records
+elif [[ -n "$RESET_DEMO_DATA" ]]; then
+  echo "Unknown option: $RESET_DEMO_DATA" >&2
+  exit 2
+fi
 
 PYTHON_BIN="${PYTHON_BIN:-python3}"
 if ! command -v "$PYTHON_BIN" >/dev/null 2>&1; then PYTHON_BIN=python; fi
@@ -40,7 +62,7 @@ LESSON_ID="$(json_value "$SMOKE_TMP/lessons.json" 'next(x["lesson_id"] for x in 
 
 echo "[3/7] Student session"
 request POST "$BASE_URL/api/sessions" "$SMOKE_TMP/session.json" \
-  "{\"lesson_id\":\"$LESSON_ID\",\"learner_level\":\"beginner\"}"
+  "{\"lesson_id\":\"$LESSON_ID\",\"learner_level\":\"beginner\",\"is_demo\":true}"
 SESSION_ID="$(json_value "$SMOKE_TMP/session.json" 'data["session_id"]')"
 
 echo "[4/7] Grounded tutor turn"
