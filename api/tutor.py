@@ -23,6 +23,15 @@ from api.ai import get_ai_provider, ollama_base_url
 from api.rag import retrieve
 from api.schemas import Citation, TutorTurn
 
+
+def _clean_citation_text(value: str) -> str:
+    """Remove Markdown structure from a citation while preserving its quoted text."""
+    text = value.strip()
+    text = re.sub(r"^\s*#{1,6}\s*", "", text)
+    text = re.sub(r"^\s*§\s*\d+(?:\.\d+)*\s*", "", text)
+    text = re.sub(r"^\s*(?:\d+[.)]|[-*+])\s+", "", text)
+    return text.strip()
+
 MODEL = "gpt-5.6"
 OLLAMA_MODEL = "qwen2.5:3b"
 
@@ -397,9 +406,10 @@ def process_chat(db: Session, session: LearningSession, student_text: str) -> di
     citations = []
     for citation in turn.citations:
         data = citation.model_dump()
+        data["snippet"] = _clean_citation_text(data["snippet"])
         source_chunk = chunk_by_id.get(citation.chunk_id)
         if source_chunk:
-            heading = source_chunk.content.splitlines()[0].lstrip("# ").strip()
+            heading = _clean_citation_text(source_chunk.content.splitlines()[0])
             data["label"] = heading or f"Source section {source_chunk.chunk_index + 1}"
         citations.append(data)
     if turn.intent == "off_topic" or not turn.grounded:

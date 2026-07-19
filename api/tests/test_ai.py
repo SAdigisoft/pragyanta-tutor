@@ -9,6 +9,12 @@ from api.ai import get_ai_provider
 from api.schemas import TutorTurn
 
 
+def test_citation_display_text_removes_markdown_structure() -> None:
+    assert tutor._clean_citation_text("## §1 What lists and tuples are") == "What lists and tuples are"
+    assert tutor._clean_citation_text("1. Lists are mutable") == "Lists are mutable"
+    assert tutor._clean_citation_text("- Tuples are immutable") == "Tuples are immutable"
+
+
 def test_provider_defaults_to_mock(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("AI_PROVIDER", raising=False)
     monkeypatch.setenv("MOCK_OPENAI", "1")
