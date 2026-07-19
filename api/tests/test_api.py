@@ -225,6 +225,33 @@ def test_keyless_chat_is_grounded_in_a_non_showcase_lesson(client: TestClient) -
 def test_misconception_then_resolution_updates_report(
     client: TestClient, lesson: dict, session: dict
 ) -> None:
+    lesson_id = UUID(lesson["lesson_id"])
+    with SessionLocal.begin() as db:
+        chunk = db.scalar(select(Chunk).where(Chunk.lesson_id == lesson_id))
+        db.add(PracticeQuestion(
+            lesson_id=lesson_id,
+            chunk_id=chunk.id,
+            kind="mcq",
+            difficulty=LearnerLevel.beginner,
+            prompt="What is the difference between a list and a tuple?",
+            options=["A list changes", "A tuple changes"],
+            answer="A list changes; a tuple does not.",
+            explanation="Lists are mutable and tuples are immutable.",
+            source_quote="A list is mutable, meaning its contents can be changed after creation.",
+            is_featured=True,
+            mock_profile={
+                "topic_terms": ["list", "tuple"],
+                "misconception_all": ["tuple"],
+                "misconception_any": ["modify", "change", "mutable"],
+                "misconception_exclude": ["cannot", "can't", "immutable", "error"],
+                "resolution_any": ["error", "cannot", "can't", "immutable"],
+                "description": "Tuple values can be modified.",
+                "remediation": "A tuple is immutable.",
+                "verification_question": "What happens when tuple item assignment is attempted?",
+                "beginner_answer": "A list changes; a tuple stays fixed.",
+                "beginner_follow_up": "Which should store fixed coordinates?",
+            },
+        ))
     wrong = client.post(
         f"/api/sessions/{session['session_id']}/chat",
         json={"message": "A tuple is better because we can modify its values later."},

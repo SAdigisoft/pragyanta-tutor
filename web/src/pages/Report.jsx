@@ -16,7 +16,7 @@ export default function Report() {
   const changeState = async (next) => { setState(next); setError(''); if (next === 'error') { setError('The learning-gap report could not be loaded. Refresh to try again.'); return } const result = await getReport(lessonId); if (next === 'empty') { result.misconceptions = []; result.summary = { total: 0, resolved: 0, unresolved: 0, open: 0 } } setData(result) }
   return <div className="page report-page"><Header mode="teacher" />
     <main className="report-main">
-      <Link className="report-crumb" to="/?role=teacher"><BookIcon size={23} /><span>›</span>{data?.lesson_title || 'Python Lists and Tuples'}</Link>
+      <Link className="report-crumb" to="/?role=teacher"><BookIcon size={23} /><span>›</span>{data?.lesson_title || 'Lesson report'}</Link>
       <section className="report-title"><div><span className="overline"><i />Teacher evidence</span><h1>Misconception report</h1></div></section>
       {error ? <div className="report-empty error-card"><h2>Report unavailable</h2><p>{error}</p></div> : !data ? <div className="report-empty">Loading learning gaps…</div> : data.misconceptions.length === 0 ? <div className="report-empty"><span className="empty-check">✓</span><h2>No misconceptions detected yet</h2><p>Students haven’t hit any snags. New learning gaps will appear here when the tutor detects them.</p></div> : <>
         <section className="report-stats" aria-label="Misconception summary">

@@ -340,7 +340,7 @@ export default function Landing() {
                   <input
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Python Lists and Tuples"
+                    placeholder="e.g. Introduction to Python"
                   />
                 </label>
                 <label>

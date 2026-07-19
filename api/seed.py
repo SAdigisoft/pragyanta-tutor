@@ -8,9 +8,6 @@ from api.database import SessionLocal
 from api.models import Chunk, LearnerLevel, Lesson, PracticeQuestion
 from api.rag import chunk_text, embed
 
-# The lists-and-tuples lesson drives the scripted demo, golden-set evaluation,
-# and the smoke scripts, so its title must remain stable.
-SEED_TITLE = "Python Lists and Tuples"
 CURRICULUM_DIR = Path(__file__).with_name("curriculum")
 LEGACY_LESSON = Path(__file__).with_name("seed_lesson.md")
 QUESTION_BANK = Path(__file__).with_name("question_bank.json")
@@ -110,6 +107,7 @@ def load_question_bank(db, *, repair_single_question_chunks: bool = False) -> in
         question.misconception = record.get("misconception")
         question.source_quote = record.get("source_quote")
         question.is_featured = bool(record.get("featured", False))
+        question.mock_profile = record.get("mock_profile")
         changed += 1
     if changed:
         print(f"Synchronized {changed} practice question(s) from the committed bank.")
@@ -125,11 +123,15 @@ def seed_database():
     primary_id = None
     with SessionLocal() as db:
         for path in files:
-            lesson = _ingest_lesson(db, path)
-            if lesson and lesson.title == SEED_TITLE:
-                primary_id = lesson.id
+            _ingest_lesson(db, path)
         db.commit()
         load_question_bank(db)
+        db.flush()
+        primary_id = db.scalar(
+            select(Lesson.id)
+            .join(PracticeQuestion, PracticeQuestion.lesson_id == Lesson.id)
+            .where(PracticeQuestion.is_featured.is_(True))
+        )
         db.commit()
     print(f"Curriculum seed complete: {len(files)} lesson file(s) processed.")
     return primary_id

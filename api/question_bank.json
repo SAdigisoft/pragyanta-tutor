@@ -151,7 +151,22 @@
     "answer": "A list can change after creation; a tuple cannot.",
     "explanation": "A list is mutable, so its contents can change after creation. A tuple is immutable, so its contents remain fixed.",
     "misconception": "The learner has reversed the mutability of lists and tuples.",
-    "source_quote": "A list is mutable, meaning its contents can be changed after creation. A tuple is immutable, meaning its contents cannot be changed after creation."
+    "source_quote": "A list is mutable, meaning its contents can be changed after creation. A tuple is immutable, meaning its contents cannot be changed after creation.",
+    "mock_profile": {
+      "topic_terms": ["list", "tuple"],
+      "misconception_all": ["tuple"],
+      "misconception_any": ["modify", "change", "mutable"],
+      "misconception_exclude": ["cannot", "can't", "immutable", "error"],
+      "resolution_any": ["error", "cannot", "can't", "immutable"],
+      "off_topic_any": ["cricket", "world cup"],
+      "description": "The student believes tuple values can be modified after creation.",
+      "beginner_answer": "A list can change after you create it—you can add, remove, or replace items. A tuple stays fixed, so it is useful for values that should not change.",
+      "intermediate_answer": "Lists are mutable sequences, so item assignment and size-changing operations are supported. Tuples are immutable sequences; that fixed identity also allows hashable tuples to serve as dictionary keys.",
+      "remediation": "Think of a list as a whiteboard: you can erase and rewrite it. A tuple is like a printed page: after it is created, its values stay fixed.",
+      "verification_question": "You have point = (3, 4). What happens if you run point[0] = 5?",
+      "beginner_follow_up": "Quick check—if you needed coordinates that must never change, which would you pick, and why?",
+      "intermediate_follow_up": "Which structure would you choose for coordinates that must stay fixed, and why?"
+    }
   },
   {
     "lesson_title": "Python Lists and Tuples",

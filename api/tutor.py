@@ -18,6 +18,7 @@ from api.models import (
     MessageType,
     Misconception,
     MisconceptionStatus,
+    PracticeQuestion,
 )
 from api.ai import get_ai_provider, ollama_base_url
 from api.rag import retrieve
@@ -74,9 +75,6 @@ def _source_excerpt(chunks):
         return None, ""
     chunk = chunks[0]
     content = chunk.content
-    preferred = "A list is mutable, meaning its contents can be changed after creation. A tuple is immutable, meaning its contents cannot be changed after creation."
-    if preferred in content:
-        return chunk, preferred
     paragraphs = [part.strip() for part in content.split("\n\n") if part.strip()]
     passage = next((part for part in paragraphs if not part.startswith("#") and len(part) >= 40), "")
     if not passage:
@@ -93,43 +91,55 @@ def _citation(chunks):
     return [] if not chunk or not snippet else [{"chunk_id": str(chunk.id), "snippet": snippet}]
 
 
-def _mock_turn(message: str, chunks, level: str, open_item: Misconception | None, last_tutor: Message | None) -> TutorTurn:
+def _matches_all(text: str, terms: list[str]) -> bool:
+    return all(term.lower() in text for term in terms)
+
+
+def _matches_any(text: str, terms: list[str]) -> bool:
+    return any(term.lower() in text for term in terms)
+
+
+def _mock_turn(message: str, chunks, level: str, open_item: Misconception | None,
+               last_tutor: Message | None, profile: dict | None = None) -> TutorTurn:
     lower = message.lower()
     citations = _citation(chunks)
     if open_item and last_tutor and last_tutor.msg_type == MessageType.verification_question:
-        resolved = any(token in lower for token in ("error", "cannot", "can't", "immutable", "doesn't change", "does not change"))
+        resolved = bool(profile and _matches_any(lower, profile.get("resolution_any", [])))
         return TutorTurn(intent="verification_response", grounded=True, answer="", citations=[], misconception_detected=False,
                          misconception=None, remediation=None, verification_question=None,
                          verification_verdict="resolved" if resolved else "unresolved", follow_up_question=None)
-    if any(token in lower for token in ("cricket", "world cup", "weather", "capital of", "president", "football")):
+    if profile and _matches_any(lower, profile.get("off_topic_any", [])):
         return TutorTurn(intent="off_topic", grounded=False,
                          answer="That's outside this lesson's material. I can only teach from the sources your teacher provided.",
                          citations=[], misconception_detected=False, misconception=None, remediation=None,
                          verification_question=None, verification_verdict=None, follow_up_question=None)
-    misconception = "tuple" in lower and any(token in lower for token in ("modify", "change later", "can change", "mutable")) and not any(token in lower for token in ("can't", "cannot", "immutable", "error"))
+    misconception = bool(
+        profile
+        and _matches_all(lower, profile.get("misconception_all", []))
+        and _matches_any(lower, profile.get("misconception_any", []))
+        and not _matches_any(lower, profile.get("misconception_exclude", []))
+    )
     if misconception:
         return TutorTurn(intent="answer_attempt", grounded=True, answer="", citations=citations,
                          misconception_detected=True,
-                         misconception={"description": "The student believes tuple values can be modified after creation.", "evidence": message},
-                         remediation="Think of a list as a whiteboard: you can erase and rewrite it. A tuple is like a printed page: after it is created, its values stay fixed.",
-                         verification_question="You have point = (3, 4). What happens if you run point[0] = 5?",
+                         misconception={"description": profile["description"], "evidence": message},
+                         remediation=profile["remediation"],
+                         verification_question=profile["verification_question"],
                          verification_verdict=None, follow_up_question=None)
-    if "?" not in message and any(token in lower for token in ("tuple", "list", "immutable", "mutable")):
+    topic_terms = profile.get("topic_terms", []) if profile else []
+    if profile and "?" not in message and _matches_any(lower, topic_terms):
         return TutorTurn(intent="answer_attempt", grounded=True,
-                         answer="Correct—the important distinction is whether the collection can change after creation.", citations=citations,
+                         answer=profile.get("correct_answer", "Your answer matches the lesson evidence."), citations=citations,
                          misconception_detected=False, misconception=None, remediation=None, verification_question=None,
-                         verification_verdict=None, follow_up_question="What kind of data would you store in a tuple?")
+                         verification_verdict=None, follow_up_question=profile.get("beginner_follow_up"))
     if not chunks:
         return TutorTurn(intent="question", grounded=False, answer="The teacher's material does not cover that yet.", citations=[],
                          misconception_detected=False, misconception=None, remediation=None, verification_question=None,
                          verification_verdict=None, follow_up_question=None)
-    list_tuple_question = "list" in lower and "tuple" in lower
-    if list_tuple_question and level == "intermediate":
-        answer = "Lists are mutable sequences, so item assignment and size-changing operations are supported. Tuples are immutable sequences; that fixed identity also allows hashable tuples to serve as dictionary keys."
-        follow_up = "Which structure would you choose for coordinates that must stay fixed, and why?"
-    elif list_tuple_question:
-        answer = "A list can change after you create it—you can add, remove, or replace items. A tuple stays fixed, so it is useful for values that should not change."
-        follow_up = "Quick check—if you needed coordinates that must never change, which would you pick, and why?"
+    profile_question = bool(profile and _matches_all(lower, topic_terms))
+    if profile_question:
+        answer = profile[f"{level}_answer"]
+        follow_up = profile[f"{level}_follow_up"]
     else:
         _, excerpt = _source_excerpt(chunks)
         prefix = "The relevant source section explains:" if level == "intermediate" else "Here is the key idea from your lesson:"
@@ -401,11 +411,20 @@ def process_chat(db: Session, session: LearningSession, student_text: str) -> di
         if active_verification:
             last_tutor = active_verification
     chunks = retrieve(db, session.lesson_id, student_text, 4)
+    featured_question = db.scalar(
+        select(PracticeQuestion).where(
+            PracticeQuestion.lesson_id == session.lesson_id,
+            PracticeQuestion.is_featured.is_(True),
+        )
+    )
     db.add(Message(session_id=session.id, role=MessageRole.student, content=student_text, msg_type=MessageType.chat))
     provider = get_ai_provider()
     try:
         if provider == "mock":
-            turn = _mock_turn(student_text, chunks, session.learner_level.value, open_item, last_tutor)
+            turn = _mock_turn(
+                student_text, chunks, session.learner_level.value, open_item, last_tutor,
+                featured_question.mock_profile if featured_question else None,
+            )
         elif provider == "ollama":
             turn = _ollama_turn(student_text, chunks, session.learner_level.value, history, open_item)
         else:

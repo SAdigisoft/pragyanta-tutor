@@ -123,12 +123,17 @@ def test_keyless_showcase_keeps_the_known_list_and_tuple_explanation() -> None:
     chunk = SimpleNamespace(id=uuid4(), content=source)
 
     turn = tutor._mock_turn(
-        "What is the difference between a list and a tuple?", [chunk], "beginner", None, None
+        "What is the difference between a list and a tuple?", [chunk], "beginner", None, None,
+        {
+            "topic_terms": ["list", "tuple"],
+            "beginner_answer": "A list can change; a tuple stays fixed.",
+            "beginner_follow_up": "Which would you choose for fixed coordinates?",
+        },
     )
 
     assert turn.grounded is True
     assert "A list can change" in turn.answer
-    assert turn.citations[0].snippet == source
+    assert turn.citations[0].snippet in source
 
 
 def test_ollama_embedding_requires_database_dimensions(
