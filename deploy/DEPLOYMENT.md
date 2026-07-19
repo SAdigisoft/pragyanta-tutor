@@ -52,6 +52,14 @@ The smoke test reads the web shell, health endpoint, lesson list, and CORS
 preflight. It deliberately does not create sessions, messages, lessons, or
 misconceptions.
 
+7. Run the full retained showcase journey against the public API. This creates
+   one reviewer session and verifies grounded retrieval, misconception
+   detection, resolution, and the stored teacher report:
+
+   ```powershell
+   .\smoke.ps1 https://YOUR-API.onrender.com
+   ```
+
 ## Required environment
 
 | Service | Variable | Value |
@@ -59,6 +67,7 @@ misconceptions.
 | API | `DATABASE_URL` | Managed PostgreSQL connection string (secret) |
 | API | `CORS_ORIGINS` | Exact public HTTPS web origin |
 | API | `MOCK_OPENAI` | `1` for credential-free deterministic behavior |
+| API | `AI_PROVIDER` | `mock` for the credential-free reviewer showcase |
 | Web | `VITE_API_BASE_URL` | Public HTTPS API URL |
 | Web | `VITE_MOCK` | `0` |
 | Web | `VITE_SHOW_DEMO_SWITCHER` | `false` |

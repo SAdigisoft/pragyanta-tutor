@@ -21,7 +21,7 @@ Open:
 - API health: <http://localhost:8000/health>
 - API docs: <http://localhost:8000/docs>
 
-The first startup applies Alembic migrations and loads the bundled **Python Lists and Tuples** lesson idempotently. Database data is retained in the `pragyanta_postgres_data` Docker volume.
+The first startup applies Alembic migrations and loads all 14 bundled Python lessons plus their grounded practice bank idempotently. Database data is retained in the `pragyanta_postgres_data` Docker volume.
 
 Keyless mode is intentionally limited: it validates every screen, route, database transition, and integration contract, but it does not measure real model quality. Keep these values in `.env`:
 
@@ -33,6 +33,17 @@ VITE_MOCK=0
 ```
 
 `VITE_MOCK=0` connects the browser to the real local FastAPI/PostgreSQL stack. Use `VITE_MOCK=1` only for isolated frontend work.
+
+### Keyless reviewer showcase
+
+The hackathon review path requires only Docker—no OpenAI key and no Ollama installation. On the lesson library, open the first card labeled **Guided showcase** and use the built-in question:
+
+1. Ask **What is the difference between a list and a tuple?**
+2. Enter the known misconception: **A tuple is better because we can modify its values later.**
+3. Answer the verification: **It raises an error because a tuple is immutable and cannot be changed.**
+4. Open the teacher report and inspect the stored resolved misconception.
+
+The keyless tutor response is deterministic, but the lesson chunks, vector retrieval, exact citation, session, messages, misconception transition, and report all use the real FastAPI/PostgreSQL/pgvector stack. Ollama remains an optional local experiment and is not required or claimed for the public reviewer path.
 
 ## Run with real local AI through Ollama
 

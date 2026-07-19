@@ -48,9 +48,13 @@ export default function Learn() {
   }
 
   const lessonTitle = session?.lesson_title || 'Your lesson'
-  const starters = [
+  const starters = lessonTitle === 'Python Lists and Tuples' ? [
+    'What is the difference between a list and a tuple?',
+    'When should I choose a tuple instead of a list?',
+    'Why can a tuple be a dictionary key?',
+  ] : [
     `What are the key ideas in ${lessonTitle}?`,
-    'Can you explain the first concept with an example?',
+    'Can you explain the first concept from this lesson?',
     'What should I practise from this lesson?',
   ]
   const unavailable = Boolean(error && !session)

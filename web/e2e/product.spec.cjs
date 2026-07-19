@@ -109,4 +109,37 @@ test.describe('Pragyanta product journeys', () => {
     await expect(page.locator('.question-prompt')).toBeVisible()
     await page.screenshot({ path: '../artifacts/redesign/27-all-lessons-practice.png', fullPage: true })
   })
+
+  test('runs the complete keyless guided showcase without Ollama', async ({ page, request }) => {
+    const lessons = await (await request.get(`${API}/api/lessons`)).json()
+    const lesson = lessons.find((item) => item.title === 'Python Lists and Tuples')
+    await page.goto(`${WEB}/?role=teacher`)
+    const showcase = page.locator('.lesson-card').first()
+    await expect(showcase).toContainText('Guided showcase')
+    await expect(showcase).toContainText('Python Lists and Tuples')
+    await page.screenshot({ path: '../artifacts/redesign/29-keyless-showcase-entry.png', fullPage: true })
+    await showcase.getByRole('button', { name: /Try guided demo/ }).click()
+    await expect(page).toHaveURL(/\/learn\//)
+
+    await page.getByRole('button', { name: 'What is the difference between a list and a tuple?' }).click()
+    await expect(page.getByText(/A list can change after you create it/)).toBeVisible()
+    await expect(page.locator('.citation-card')).toBeVisible()
+
+    const composer = page.getByLabel('Ask about this lesson')
+    await composer.fill('A tuple is better because we can modify its values later.')
+    await page.getByRole('button', { name: /Ask the tutor/ }).click()
+    await expect(page.getByText(/A tuple is like a printed page/)).toBeVisible()
+    await expect(page.getByLabel('Tutor conversation').getByText('You have point = (3, 4). What happens if you run point[0] = 5?')).toBeVisible()
+
+    await composer.fill('It raises an error because a tuple is immutable and cannot be changed.')
+    await page.getByRole('button', { name: /Ask the tutor/ }).click()
+    const resolvedVerdict = page.getByLabel('Tutor conversation').getByText(/matches the lesson evidence/)
+    await expect(resolvedVerdict).toBeVisible()
+    await resolvedVerdict.scrollIntoViewIfNeeded()
+    await page.screenshot({ path: '../artifacts/redesign/28-keyless-guided-showcase.png', fullPage: true })
+
+    const report = await (await request.get(`${API}/api/lessons/${lesson.lesson_id}/report`)).json()
+    expect(report.summary.resolved).toBeGreaterThan(0)
+    expect(report.misconceptions.some((item) => item.evidence.includes('modify its values later'))).toBe(true)
+  })
 })

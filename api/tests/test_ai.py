@@ -99,6 +99,38 @@ def test_provider_rejects_openai_without_key(monkeypatch: pytest.MonkeyPatch) ->
         get_ai_provider()
 
 
+def test_keyless_tutor_uses_the_retrieved_lesson_instead_of_a_hardcoded_topic() -> None:
+    source = (
+        "## Dynamic typing\n\nPython is dynamically typed, which means a variable does not have "
+        "a fixed type; the type belongs to the value, not the name."
+    )
+    chunk = SimpleNamespace(id=uuid4(), content=source)
+
+    turn = tutor._mock_turn("What is dynamic typing?", [chunk], "beginner", None, None)
+
+    assert turn.grounded is True
+    assert "dynamically typed" in turn.answer
+    assert "list" not in turn.answer.lower()
+    assert "tuple" not in turn.answer.lower()
+    assert turn.citations[0].snippet in source
+
+
+def test_keyless_showcase_keeps_the_known_list_and_tuple_explanation() -> None:
+    source = (
+        "A list is mutable, meaning its contents can be changed after creation. "
+        "A tuple is immutable, meaning its contents cannot be changed after creation."
+    )
+    chunk = SimpleNamespace(id=uuid4(), content=source)
+
+    turn = tutor._mock_turn(
+        "What is the difference between a list and a tuple?", [chunk], "beginner", None, None
+    )
+
+    assert turn.grounded is True
+    assert "A list can change" in turn.answer
+    assert turn.citations[0].snippet == source
+
+
 def test_ollama_embedding_requires_database_dimensions(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:

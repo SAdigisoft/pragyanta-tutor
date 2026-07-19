@@ -112,6 +112,7 @@ a { color: inherit; }
 .section-heading > p { margin: 0 0 4px 15px; color: var(--ink-soft); font-size: 11px; white-space: nowrap; }
 .lesson-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(318px, 1fr)); gap: 18px; margin-top: 18px; }
 .lesson-card { min-height: 234px; padding: 22px 24px 20px; background: rgba(255,253,249,.78); border: 1px solid var(--rule-dark); border-radius: 12px; display: flex; flex-direction: column; transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease; }
+.lesson-card.showcase-lesson { border-color: var(--evidence); box-shadow: inset 4px 0 var(--evidence), 0 10px 26px rgba(20,83,45,.08); }
 .lesson-card:hover { border-color: var(--evidence); box-shadow: 0 12px 30px rgba(20,83,45,.09); transform: translateY(-2px); }
 .lesson-card-top { display: flex; align-items: center; gap: 13px; margin-bottom: 15px; }
 .lesson-document { flex: 0 0 auto; width: 44px; height: 52px; display: grid; place-items: center; color: var(--ink); border: 1px solid var(--rule-dark); border-radius: 7px; background: linear-gradient(145deg, var(--paper-white), var(--paper-deep)); }

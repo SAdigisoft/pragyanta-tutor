@@ -152,6 +152,37 @@ def test_question_chat_has_ordered_messages_and_citation(client: TestClient, ses
     assert [m["msg_type"] for m in messages[1:3]] == ["chat", "diagnostic_question"]
 
 
+def test_keyless_chat_is_grounded_in_a_non_showcase_lesson(client: TestClient) -> None:
+    created = client.post(
+        "/api/lessons",
+        json={
+            "title": "Contract test: dynamic typing",
+            "text": (
+                "## Dynamic typing\n\nPython is dynamically typed, which means a variable does not "
+                "have a fixed type; the type belongs to the value, not the name."
+            ),
+        },
+    )
+    assert created.status_code == 201, created.text
+    started = client.post(
+        "/api/sessions",
+        json={"lesson_id": created.json()["lesson_id"], "learner_level": "beginner"},
+    )
+    assert started.status_code == 201, started.text
+
+    response = client.post(
+        f"/api/sessions/{started.json()['session_id']}/chat",
+        json={"message": "What is dynamic typing?"},
+    )
+
+    assert response.status_code == 200, response.text
+    answer = response.json()["tutor_messages"][0]
+    assert "dynamically typed" in answer["content"]
+    assert "list" not in answer["content"].lower()
+    assert "tuple" not in answer["content"].lower()
+    assert answer["citations"]
+
+
 def test_misconception_then_resolution_updates_report(
     client: TestClient, lesson: dict, session: dict
 ) -> None:
