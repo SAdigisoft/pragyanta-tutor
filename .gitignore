@@ -7,4 +7,7 @@ node_modules/
 dist/
 .vite/
 coverage/
-
+test-results/
+web/test-results/
+playwright-report/
+web/playwright-report/
