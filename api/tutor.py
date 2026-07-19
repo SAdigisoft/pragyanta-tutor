@@ -393,9 +393,20 @@ def process_chat(db: Session, session: LearningSession, student_text: str) -> di
             item["verdict_status"] = verdict.value
         outgoing.append(item)
 
-    citations = [item.model_dump() for item in turn.citations]
-    if turn.intent == "off_topic":
-        add_tutor(MessageType.off_topic, turn.answer)
+    chunk_by_id = {str(chunk.id): chunk for chunk in chunks}
+    citations = []
+    for citation in turn.citations:
+        data = citation.model_dump()
+        source_chunk = chunk_by_id.get(citation.chunk_id)
+        if source_chunk:
+            heading = source_chunk.content.splitlines()[0].lstrip("# ").strip()
+            data["label"] = heading or f"Source section {source_chunk.chunk_index + 1}"
+        citations.append(data)
+    if turn.intent == "off_topic" or not turn.grounded:
+        boundary_answer = turn.answer.strip() or (
+            "That's outside this lesson's material. I can only teach from the sources your teacher provided."
+        )
+        add_tutor(MessageType.off_topic, boundary_answer)
     elif turn.intent == "verification_response" and open_item:
         status = MisconceptionStatus(turn.verification_verdict or "unresolved")
         open_item.status = status
@@ -411,13 +422,18 @@ def process_chat(db: Session, session: LearningSession, student_text: str) -> di
                              description=turn.misconception["description"], evidence=turn.misconception["evidence"])
         db.add(item)
         add_tutor(MessageType.remediation, turn.remediation or turn.answer, citations)
-        if turn.verification_question:
-            add_tutor(MessageType.verification_question, turn.verification_question)
+        verification_question = turn.verification_question or (
+            "Apply the corrected idea to a new example: what would happen, and why?"
+        )
+        add_tutor(MessageType.verification_question, verification_question)
         update = {"description": item.description, "status": "open"}
     else:
         if turn.answer:
             add_tutor(MessageType.chat, turn.answer, citations)
-        if turn.follow_up_question:
-            add_tutor(MessageType.diagnostic_question, turn.follow_up_question)
+        if turn.answer:
+            follow_up = turn.follow_up_question or (
+                "What example would you use to explain this idea in your own words?"
+            )
+            add_tutor(MessageType.diagnostic_question, follow_up)
     db.commit()
     return {"tutor_messages": outgoing, "misconception_update": update}

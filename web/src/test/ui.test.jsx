@@ -40,7 +40,7 @@ describe('core frontend rendering', () => {
     expect(await screen.findByText('3')).toBeInTheDocument()
     expect(screen.getByText('The student believes tuple values can be modified.')).toBeInTheDocument()
     for (const status of ['resolved', 'unresolved', 'open']) {
-      expect(screen.getByText(status)).toHaveClass('status-badge', status)
+      expect(screen.getByText(status, { selector: '.status-badge' })).toHaveClass('status-badge', status)
     }
   })
 })

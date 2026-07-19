@@ -11,7 +11,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from api.database import get_db
-from api.models import Chunk, LearningSession, Lesson, Message, Misconception, MisconceptionStatus
+from api.models import Chunk, LearnerLevel, LearningSession, Lesson, Message, Misconception, MisconceptionStatus
 from api.rag import chunk_text, embed, extract_pdf_text
 from api.schemas import ChatCreate, LessonTextCreate, SessionCreate, SessionLevelUpdate
 from api.tutor import process_chat
@@ -107,7 +107,7 @@ def update_session_level(session_id: UUID, payload: SessionLevelUpdate, db: Sess
     session = db.get(LearningSession, session_id)
     if not session:
         raise HTTPException(404, "Session not found")
-    session.learner_level = payload.learner_level
+    session.learner_level = LearnerLevel(payload.learner_level)
     db.commit()
     return {"session_id": str(session.id), "learner_level": session.learner_level.value}
 

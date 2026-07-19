@@ -5,6 +5,7 @@ import ChatMessage from '../components/ChatMessage'
 import DemoSwitcher from '../components/DemoSwitcher'
 import Header from '../components/Header'
 import LevelToggle from '../components/LevelToggle'
+import { BookIcon } from '../components/Icons'
 
 const starters = ['What’s the difference between a list and a tuple?', 'When should I choose a tuple?', 'Can a list hold different data types?']
 
@@ -47,15 +48,15 @@ export default function Learn() {
     <main className="learn-main">
       <div className="lesson-rail"><Link to="/?role=teacher">← Leave lesson</Link><div className="rail-rule" /><span>Lesson 01</span></div>
       <section className="chat-shell" aria-label="Tutor conversation">
-        <div className="chat-heading"><div><span className="overline"><i />Guided lesson</span><h1>Let’s learn together.</h1></div><p>Every answer is grounded in your teacher’s material.</p></div>
+        {messages.length > 0 && <div className="chat-heading"><div><span className="overline"><i />Guided lesson</span><h1>Let’s learn together.</h1></div><p>Every answer is grounded in your teacher’s material.</p></div>}
         <div className={`message-stream ${messages.length === 0 ? 'is-empty' : ''}`} aria-live="polite">
-          {messages.length === 0 && !error && <div className="chat-empty"><div className="empty-ornament">P</div><h2>What would you like to understand?</h2><p>Ask anything about this lesson. I’ll explain it using only your teacher’s material, then check what clicked.</p><div className="starter-chips">{starters.map((item) => <button key={item} onClick={() => ask(null, item)}>{item}<span>↗</span></button>)}</div></div>}
-          {messages.map((message) => <ChatMessage message={message} key={message.id} />)}
+          {messages.length === 0 && !error && <div className="chat-empty"><div className="empty-ornament"><BookIcon size={66} /></div><span className="lesson-prompt">Lesson prompt</span><h2>What would you like<br />to understand?</h2><p>Ask about Python lists and tuples. I’ll answer only from your teacher’s material and show the source.</p><div className="starter-chips">{starters.map((item, index) => <button key={item} onClick={() => ask(null, item)}><span className="starter-number">0{index + 1}</span><strong>{item}</strong><span className="starter-arrow">›</span></button>)}</div></div>}
+          {messages.map((message, index) => <ChatMessage message={message} key={message.id || `${message.role}-${message.msg_type}-${index}`} />)}
           {thinking && <div className="message-row tutor" role="status"><div className="typing"><span /><span /><span /><small>Finding evidence in your lesson</small></div></div>}
           {error && <div className="message-row tutor"><div className="chat-error" role="alert"><div><strong>The tutor paused here</strong><p>{error}</p></div><button onClick={() => setError('')}>Try again</button></div></div>}
           <div ref={endRef} />
         </div>
-        <form className="composer" onSubmit={ask}><label htmlFor="message">Ask about this lesson</label><div className="composer-row"><textarea id="message" rows="1" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) ask(e) }} placeholder="Type your question or answer…" disabled={thinking} /><button className="primary-button" disabled={!input.trim() || thinking}>Ask the tutor <span>↑</span></button></div><div className="composer-foot"><span><i />Grounded in 8 teacher-approved sections</span><span>Enter to send · Shift + Enter for a new line</span></div></form>
+        <form className="composer" onSubmit={ask}><div className="composer-row"><span className="composer-symbol">···</span><textarea id="message" aria-label="Ask about this lesson" rows="1" value={input} onChange={(e) => setInput(e.target.value)} onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) ask(e) }} placeholder="Ask about this lesson…" disabled={thinking} /><button className="primary-button" disabled={!input.trim() || thinking}>Ask the tutor <span>↗</span></button></div><div className="composer-foot"><span><i />Grounded in teacher-approved source sections</span><span>Enter to send · Shift + Enter for a new line</span></div></form>
       </section>
     </main>
     <DemoSwitcher page="learn" value={demoState} onChange={switchState} />

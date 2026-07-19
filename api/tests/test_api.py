@@ -71,6 +71,18 @@ def test_create_session_and_reject_bad_lesson(client: TestClient, lesson: dict) 
     _assert_error(missing, 404)
 
 
+def test_update_session_level(client: TestClient, session: dict) -> None:
+    response = client.patch(
+        f"/api/sessions/{session['session_id']}",
+        json={"learner_level": "intermediate"},
+    )
+    assert response.status_code == 200, response.text
+    assert response.json() == {
+        "session_id": session["session_id"],
+        "learner_level": "intermediate",
+    }
+
+
 def test_question_chat_has_ordered_messages_and_citation(client: TestClient, session: dict) -> None:
     response = client.post(
         f"/api/sessions/{session['session_id']}/chat",
