@@ -34,15 +34,16 @@ def test_health(client: TestClient) -> None:
 
 
 def test_create_and_list_text_lesson(client: TestClient, lesson: dict) -> None:
-    assert set(lesson) == {"lesson_id", "title", "created_at", "chunk_count", "question_count"}
+    assert set(lesson) == {"lesson_id", "title", "created_at", "chunk_count", "question_count", "featured_prompt"}
     assert lesson["title"] == "Contract test: lists and tuples"
     assert lesson["chunk_count"] >= 1
 
     response = client.get("/api/lessons")
     assert response.status_code == 200
     listed = next(row for row in response.json() if row["lesson_id"] == lesson["lesson_id"])
-    assert set(listed) == {"lesson_id", "title", "created_at", "chunk_count", "question_count"}
+    assert set(listed) == {"lesson_id", "title", "created_at", "chunk_count", "question_count", "featured_prompt"}
     assert listed["question_count"] == 0
+    assert listed["featured_prompt"] is None
 
 
 def test_create_pdf_lesson(client: TestClient) -> None:
@@ -75,11 +76,29 @@ def test_create_session_and_reject_bad_lesson(client: TestClient, lesson: dict) 
     _assert_error(missing, 404)
 
 
-def test_update_session_level(client: TestClient, session: dict) -> None:
+def test_update_session_level(client: TestClient, lesson: dict, session: dict) -> None:
+    lesson_id = UUID(lesson["lesson_id"])
+    featured_prompt = "What is the difference between a list and a tuple?"
+    with SessionLocal.begin() as db:
+        chunk = db.scalar(select(Chunk).where(Chunk.lesson_id == lesson_id))
+        db.add(PracticeQuestion(
+            lesson_id=lesson_id,
+            chunk_id=chunk.id,
+            kind="mcq",
+            difficulty=LearnerLevel.beginner,
+            prompt=featured_prompt,
+            options=["Lists change", "Tuples change", "Both change", "Neither changes"],
+            answer="Lists change",
+            explanation="The source distinguishes mutable lists from immutable tuples.",
+            misconception="Reversing list and tuple mutability.",
+            source_quote="A list is mutable, meaning its contents can be changed after creation.",
+            is_featured=True,
+        ))
     detail = client.get(f"/api/sessions/{session['session_id']}")
     assert detail.status_code == 200, detail.text
     assert detail.json()["lesson_title"] == "Contract test: lists and tuples"
     assert detail.json()["learner_level"] == "beginner"
+    assert detail.json()["featured_prompt"] == featured_prompt
 
     response = client.patch(
         f"/api/sessions/{session['session_id']}",
@@ -129,6 +148,7 @@ def test_practice_questions_include_exact_source_evidence(client: TestClient, le
     question = response.json()[0]
     assert question["answer"] in question["options"]
     assert question["source_quote"] == source_quote
+    assert question["is_featured"] is False
 
 
 def test_question_chat_has_ordered_messages_and_citation(client: TestClient, session: dict) -> None:

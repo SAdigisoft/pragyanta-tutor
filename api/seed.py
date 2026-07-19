@@ -109,6 +109,7 @@ def load_question_bank(db, *, repair_single_question_chunks: bool = False) -> in
         question.explanation = record["explanation"]
         question.misconception = record.get("misconception")
         question.source_quote = record.get("source_quote")
+        question.is_featured = bool(record.get("featured", False))
         changed += 1
     if changed:
         print(f"Synchronized {changed} practice question(s) from the committed bank.")

@@ -45,7 +45,7 @@ export async function createSession(payload) {
   if (!useMocks) return request('/api/sessions', { method: 'POST', body: JSON.stringify(payload) })
   await delay(380); level = payload.learner_level || 'beginner'; messages = []; step = 0
   const lesson = lessons.find((item) => item.lesson_id === payload.lesson_id) || LESSON
-  sessions = [{ session_id: 'demo-session', lesson_id: lesson.lesson_id, lesson_title: lesson.title, learner_level: level, last_message: null, created_at: new Date().toISOString() }, ...sessions.filter((item) => item.session_id !== 'demo-session')]
+  sessions = [{ session_id: 'demo-session', lesson_id: lesson.lesson_id, lesson_title: lesson.title, learner_level: level, featured_prompt: lesson.featured_prompt || null, last_message: null, created_at: new Date().toISOString() }, ...sessions.filter((item) => item.session_id !== 'demo-session')]
   return { session_id: 'demo-session' }
 }
 
@@ -60,7 +60,7 @@ export async function getSession(sessionId) {
   await delay(120)
   const session = sessions.find((item) => item.session_id === sessionId)
   if (session) return { ...session }
-  return { session_id: sessionId, lesson_id: LESSON.lesson_id, lesson_title: LESSON.title, learner_level: level, created_at: new Date().toISOString() }
+  return { session_id: sessionId, lesson_id: LESSON.lesson_id, lesson_title: LESSON.title, learner_level: level, featured_prompt: LESSON.featured_prompt, created_at: new Date().toISOString() }
 }
 
 export async function getMessages(sessionId) {

@@ -95,8 +95,8 @@ export default function Landing() {
 
   const orderedLessons = [...lessons].sort(
     (left, right) =>
-      Number(right.title === "Python Lists and Tuples") -
-      Number(left.title === "Python Lists and Tuples"),
+      Number(Boolean(right.featured_prompt)) -
+      Number(Boolean(left.featured_prompt)),
   );
 
   return (
@@ -208,7 +208,7 @@ export default function Landing() {
             <div className="lesson-grid">
               {orderedLessons.map((lesson) => (
                 <article
-                  className={`lesson-card ${lesson.title === "Python Lists and Tuples" ? "showcase-lesson" : ""}`}
+                  className={`lesson-card ${lesson.featured_prompt ? "showcase-lesson" : ""}`}
                   key={lesson.lesson_id}
                 >
                   <div className="lesson-card-top">
@@ -216,7 +216,7 @@ export default function Landing() {
                       <FileIcon size={30} />
                     </div>
                     <span className="lesson-label">
-                      {lesson.title === "Python Lists and Tuples"
+                      {lesson.featured_prompt
                         ? "Guided showcase"
                         : "Teacher-approved lesson"}
                     </span>
@@ -243,7 +243,7 @@ export default function Landing() {
                       onClick={() => startLesson(lesson.lesson_id)}
                     >
                       <UserIcon />
-                      {lesson.title === "Python Lists and Tuples"
+                      {lesson.featured_prompt
                         ? "Try guided demo"
                         : "Open as student"}{" "}
                       <ArrowIcon />

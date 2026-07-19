@@ -6,6 +6,7 @@ import ChatMessage from '../components/ChatMessage'
 import LevelToggle from '../components/LevelToggle'
 import Report from '../pages/Report'
 import Practice from '../pages/Practice'
+import Learn from '../pages/Learn'
 
 describe('core frontend rendering', () => {
   it('provides persistent product navigation and tutoring history access', async () => {
@@ -27,6 +28,12 @@ describe('core frontend rendering', () => {
     expect(screen.getByRole('button', { name: 'Beginner' })).toHaveAttribute('aria-pressed', 'true')
     await user.click(screen.getByRole('button', { name: 'Intermediate' }))
     expect(onChange).toHaveBeenCalledWith('intermediate')
+  })
+
+  it('renders the featured prompt supplied by session metadata', async () => {
+    render(<MemoryRouter initialEntries={['/learn/demo-session']}><Routes><Route path="/learn/:sessionId" element={<Learn />} /></Routes></MemoryRouter>)
+
+    expect(await screen.findByRole('button', { name: /What is the difference between a list and a tuple\?/ })).toBeInTheDocument()
   })
 
   it('normalizes verdicts returned by the real API', () => {
@@ -61,7 +68,7 @@ describe('core frontend rendering', () => {
     const user = userEvent.setup()
     render(<MemoryRouter initialEntries={['/practice/demo-lesson']}><Routes><Route path="/practice/:lessonId" element={<Practice />} /></Routes></MemoryRouter>)
 
-    expect(await screen.findByText('What is the key difference between a list and a tuple in Python?')).toBeInTheDocument()
+    expect(await screen.findByText('What is the difference between a list and a tuple?')).toBeInTheDocument()
     await user.click(screen.getByRole('radio', { name: /A list is mutable; a tuple is immutable/ }))
     await user.click(screen.getByRole('button', { name: 'Check answer' }))
     expect(screen.getByText('Source evidence')).toBeInTheDocument()

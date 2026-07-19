@@ -96,6 +96,16 @@ def main() -> int:
                 else:
                     print("PASS coverage: every lesson has at least one practice question")
 
+                featured_questions = db.scalar(text(
+                    "SELECT count(*) FROM practice_questions WHERE is_featured"
+                )) or 0
+                if featured_questions != 1:
+                    failures.append(
+                        f"expected exactly one guided showcase question, found: {featured_questions}"
+                    )
+                else:
+                    print("PASS showcase: exactly one database-backed featured question exists")
+
                 lesson_mismatches = db.scalar(text(
                     "SELECT count(*) FROM misconceptions m JOIN sessions s ON s.id=m.session_id "
                     "WHERE m.lesson_id <> s.lesson_id"

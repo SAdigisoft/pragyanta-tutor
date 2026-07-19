@@ -39,8 +39,14 @@ def health():
 def _lesson_response(db: Session, lesson: Lesson):
     count = db.scalar(select(func.count(Chunk.id)).where(Chunk.lesson_id == lesson.id)) or 0
     question_count = db.scalar(select(func.count(PracticeQuestion.id)).where(PracticeQuestion.lesson_id == lesson.id)) or 0
+    featured_prompt = db.scalar(
+        select(PracticeQuestion.prompt).where(
+            PracticeQuestion.lesson_id == lesson.id,
+            PracticeQuestion.is_featured.is_(True),
+        )
+    )
     return {"lesson_id": str(lesson.id), "title": lesson.title, "created_at": lesson.created_at.isoformat(),
-            "chunk_count": count, "question_count": question_count}
+            "chunk_count": count, "question_count": question_count, "featured_prompt": featured_prompt}
 
 
 @app.post("/api/lessons", status_code=201)
@@ -140,11 +146,18 @@ def get_session(session_id: UUID, db: Session = Depends(get_db)):
     if not session:
         raise HTTPException(404, "Session not found")
     lesson = db.get(Lesson, session.lesson_id)
+    featured_prompt = db.scalar(
+        select(PracticeQuestion.prompt).where(
+            PracticeQuestion.lesson_id == lesson.id,
+            PracticeQuestion.is_featured.is_(True),
+        )
+    )
     return {
         "session_id": str(session.id),
         "lesson_id": str(session.lesson_id),
         "lesson_title": lesson.title,
         "learner_level": session.learner_level.value,
+        "featured_prompt": featured_prompt,
         "created_at": session.created_at.isoformat(),
     }
 
@@ -195,7 +208,7 @@ def lesson_questions(lesson_id: UUID, limit: int = 20, difficulty: str | None = 
     return [{"id": str(item.id), "kind": item.kind, "difficulty": item.difficulty.value,
              "prompt": item.prompt, "options": item.options, "answer": item.answer,
              "explanation": item.explanation, "misconception": item.misconception,
-             "source_quote": item.source_quote} for item in rows]
+             "source_quote": item.source_quote, "is_featured": item.is_featured} for item in rows]
 
 
 @app.get("/api/lessons/{lesson_id}/report")

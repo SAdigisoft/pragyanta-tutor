@@ -36,6 +36,8 @@ VITE_MOCK=0
 
 ### Keyless reviewer showcase
 
+The guided question is not hard-coded in React. It is marked as the featured question in `api/question_bank.json`, loaded idempotently into PostgreSQL by `python -m api.seed`, and returned to the browser by the lesson/session API. This makes the same reviewer path available after every fresh deployment.
+
 The hackathon review path requires only Docker—no OpenAI key and no Ollama installation. On the lesson library, open the first card labeled **Guided showcase** and use the built-in question:
 
 1. Ask **What is the difference between a list and a tuple?**

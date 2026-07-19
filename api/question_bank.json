@@ -137,6 +137,24 @@
   },
   {
     "lesson_title": "Python Lists and Tuples",
+    "chunk_index": 2,
+    "kind": "mcq",
+    "difficulty": "beginner",
+    "featured": true,
+    "prompt": "What is the difference between a list and a tuple?",
+    "options": [
+      "A list can change after creation; a tuple cannot.",
+      "A tuple can change after creation; a list cannot.",
+      "Both lists and tuples are immutable.",
+      "Lists and tuples are identical."
+    ],
+    "answer": "A list can change after creation; a tuple cannot.",
+    "explanation": "A list is mutable, so its contents can change after creation. A tuple is immutable, so its contents remain fixed.",
+    "misconception": "The learner has reversed the mutability of lists and tuples.",
+    "source_quote": "A list is mutable, meaning its contents can be changed after creation. A tuple is immutable, meaning its contents cannot be changed after creation."
+  },
+  {
+    "lesson_title": "Python Lists and Tuples",
     "chunk_index": 6,
     "kind": "mcq",
     "difficulty": "intermediate",
