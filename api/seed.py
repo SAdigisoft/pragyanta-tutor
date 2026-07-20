@@ -32,12 +32,39 @@ def _curriculum_files() -> list[Path]:
 
 
 def _ingest_lesson(db, path: Path) -> Lesson | None:
-    """Insert one markdown lesson idempotently, keyed on its title."""
+    """Insert or safely synchronize one bundled lesson, keyed on its title."""
     text = path.read_text(encoding="utf-8")
     title = _title_from_markdown(text, path.stem.replace("-", " ").title())
     existing = db.scalar(select(Lesson).where(Lesson.title == title))
     if existing:
-        print(f"Lesson already present: {title} ({existing.id})")
+        pieces = chunk_text(text)
+        stored_chunks = {
+            chunk.chunk_index: chunk
+            for chunk in db.scalars(select(Chunk).where(Chunk.lesson_id == existing.id))
+        }
+        changed_pieces = [
+            piece for piece in pieces
+            if piece.chunk_index not in stored_chunks
+            or stored_chunks[piece.chunk_index].content != piece.content
+        ]
+        vectors = embed([piece.content for piece in changed_pieces]) if changed_pieces else []
+        for piece, vector in zip(changed_pieces, vectors, strict=True):
+            chunk = stored_chunks.get(piece.chunk_index)
+            if chunk is None:
+                db.add(Chunk(
+                    lesson_id=existing.id,
+                    chunk_index=piece.chunk_index,
+                    content=piece.content,
+                    embedding=vector,
+                ))
+            else:
+                chunk.content = piece.content
+                chunk.embedding = vector
+        existing.raw_text = text
+        if changed_pieces:
+            print(f"Synchronized {title}: {existing.id} ({len(changed_pieces)} changed chunk(s))")
+        else:
+            print(f"Lesson already current: {title} ({existing.id})")
         return existing
     pieces = chunk_text(text)
     if not pieces:
