@@ -11,3 +11,7 @@ test-results/
 web/test-results/
 playwright-report/
 web/playwright-report/
+
+# Local-only submission material (never publish)
+docs/
+NOTES.md
