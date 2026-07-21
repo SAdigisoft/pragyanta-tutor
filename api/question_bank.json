@@ -186,7 +186,7 @@
       "intermediate_answer": "Lists are mutable sequences, so item assignment and size-changing operations are supported. Tuples are immutable sequences; that fixed identity also allows hashable tuples to serve as dictionary keys.",
       "remediation": "Think of a list as a whiteboard: you can erase and rewrite it. A tuple is like a printed page: after it is created, its values stay fixed.",
       "verification_question": "You have point = (3, 4). What happens if you run point[0] = 5?",
-      "beginner_follow_up": "Quick check—if you needed coordinates that must never change, which would you pick, and why?",
+      "beginner_follow_up": "Quick check: if you needed coordinates that must never change, which would you pick, and why?",
       "intermediate_follow_up": "Which structure would you choose for coordinates that must stay fixed, and why?"
     }
   },

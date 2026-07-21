@@ -8,6 +8,7 @@ import pytest
 
 from api import rag, tutor
 from api.ai import get_ai_provider
+from api.seed import _sanitize_mock_profile
 from api.schemas import TutorTurn
 from api.scripts import generate_questions
 
@@ -134,6 +135,25 @@ def test_keyless_showcase_keeps_the_known_list_and_tuple_explanation() -> None:
     assert turn.grounded is True
     assert "A list can change" in turn.answer
     assert turn.citations[0].snippet in source
+
+
+def test_seed_sanitizer_repairs_dictionary_follow_up_that_omits_the_value() -> None:
+    profile = {
+        "topic_terms": ["dictionary"],
+        "beginner_follow_up": 'If student = {"name": "Asha"}, what key would you use to get Asha?',
+        "intermediate_follow_up": "Why is get() safer than square brackets when a key might be missing?",
+    }
+
+    fixed = _sanitize_mock_profile(profile)
+
+    assert fixed["beginner_follow_up"] == (
+        'In student = {"name": "Asha"}, what is the key, what is the value, '
+        'and how would you get that value from the dictionary?'
+    )
+    assert fixed["intermediate_follow_up"] == (
+        'In student = {"name": "Asha"}, identify the key and the value, '
+        'then explain why student["name"] returns "Asha".'
+    )
 
 
 def test_ollama_embedding_requires_database_dimensions(

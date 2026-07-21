@@ -31,6 +31,28 @@ def _curriculum_files() -> list[Path]:
     return [LEGACY_LESSON] if LEGACY_LESSON.exists() else []
 
 
+def _sanitize_mock_profile(profile: dict | None) -> dict | None:
+    """Repair known weak guided-question wording before it reaches the DB."""
+    if not profile:
+        return profile
+    fixed = dict(profile)
+    topic_terms = [str(term).lower() for term in fixed.get("topic_terms", [])]
+    if "dictionary" in topic_terms:
+        beginner_follow_up = str(fixed.get("beginner_follow_up") or "")
+        if beginner_follow_up == 'If student = {"name": "Asha"}, what key would you use to get Asha?':
+            fixed["beginner_follow_up"] = (
+                'In student = {"name": "Asha"}, what is the key, what is the value, '
+                'and how would you get that value from the dictionary?'
+            )
+        intermediate_follow_up = str(fixed.get("intermediate_follow_up") or "")
+        if intermediate_follow_up == "Why is get() safer than square brackets when a key might be missing?":
+            fixed["intermediate_follow_up"] = (
+                'In student = {"name": "Asha"}, identify the key and the value, '
+                'then explain why student["name"] returns "Asha".'
+            )
+    return fixed
+
+
 def _ingest_lesson(db, path: Path) -> Lesson | None:
     """Insert or safely synchronize one bundled lesson, keyed on its title."""
     text = path.read_text(encoding="utf-8")
@@ -134,7 +156,7 @@ def load_question_bank(db, *, repair_single_question_chunks: bool = False) -> in
         question.misconception = record.get("misconception")
         question.source_quote = record.get("source_quote")
         question.is_featured = bool(record.get("featured", False))
-        question.mock_profile = record.get("mock_profile")
+        question.mock_profile = _sanitize_mock_profile(record.get("mock_profile"))
         changed += 1
     if changed:
         print(f"Synchronized {changed} practice question(s) from the committed bank.")

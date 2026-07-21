@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
+    "capture:mock": "playwright test --config=playwright.mock.config.cjs --reporter=line",
+    "capture:real": "playwright test e2e/submission-capture.spec.cjs --reporter=line",
     "test": "vitest run",
     "test:watch": "vitest",
     "preview": "vite preview --host 0.0.0.0"

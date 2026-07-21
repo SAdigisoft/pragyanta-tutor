@@ -33,11 +33,11 @@ def main() -> int:
     if args.scenario != "landing":
         suffix = "resolved" if args.scenario == "report" else "main"
         print(f"Session ID: {scenario_session_id(args.scenario, suffix)}")
-    print("Open lessons: http://localhost:5173/")
+    print("Open lessons: http://localhost:6173/")
     if args.scenario == "report":
-        print(f"Open report: http://localhost:5173/report/{DEMO_LESSON_ID}")
+        print(f"Open report: http://localhost:6173/report/{DEMO_LESSON_ID}")
     elif args.scenario != "landing":
-        print(f"Open lesson: http://localhost:5173/learn/{scenario_session_id(args.scenario)}")
+        print(f"Open lesson: http://localhost:6173/learn/{scenario_session_id(args.scenario)}")
     return 0
 
 

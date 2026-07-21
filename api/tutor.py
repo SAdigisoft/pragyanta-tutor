@@ -86,9 +86,96 @@ def _source_excerpt(chunks):
     return chunk, (sentence.group(0).strip() if sentence else passage[:420].strip())
 
 
+STRUCTURAL_CITATION_RE = re.compile(
+    r"section\s+[a-z]\s*:|pdf lesson content|chapter title|lesson metadata|"
+    r"learning objectives|key vocabulary|worked examples|common misconceptions|"
+    r"check your understanding|answer key|short summary|mistaken student claim",
+    re.IGNORECASE,
+)
+
+
+def _clean_source_display_text(value: str) -> str:
+    """Keep source evidence readable when PDFs include authoring scaffolds."""
+    text = _clean_citation_text(value)
+    text = re.sub(r"\bSECTION\s+[A-Z]\s*:\s*PDF LESSON CONTENT\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(r"\bChapter title\b", "", text, flags=re.IGNORECASE)
+    text = re.sub(
+        r"\bLesson metadata\b.*?(?=\bLearning objectives\b|\bKey vocabulary\b|\bMain explanation\b|$)",
+        "",
+        text,
+        flags=re.IGNORECASE,
+    )
+    return re.sub(r"\s+", " ", text).strip()
+
+
+def _citation_excerpt(chunks):
+    """Prefer a teaching sentence over document headings for deterministic citations."""
+    for chunk in chunks:
+        passages = [part.strip() for part in chunk.content.split("\n\n") if part.strip()]
+        passages.extend(line.strip() for line in chunk.content.splitlines() if line.strip())
+        for passage in passages:
+            cleaned = _clean_source_display_text(passage)
+            if len(cleaned) < 35 or STRUCTURAL_CITATION_RE.search(cleaned):
+                continue
+            sentence = re.match(r"^.{35,260}?(?:[.!?](?=\s|$)|$)", passage, flags=re.DOTALL)
+            candidate = sentence.group(0).strip() if sentence else passage
+            cleaned_candidate = _clean_source_display_text(candidate)
+            if cleaned_candidate.endswith("?"):
+                continue
+            if cleaned_candidate in chunk.content:
+                return chunk, cleaned_candidate
+            if candidate in chunk.content:
+                return chunk, candidate
+        compact = " ".join(chunk.content.split())
+        sentences = re.findall(r"[^.!?]{35,260}[.!?]", compact)
+        for sentence in sentences:
+            cleaned = _clean_source_display_text(sentence)
+            if len(cleaned) >= 35 and not cleaned.endswith("?") and not STRUCTURAL_CITATION_RE.search(cleaned):
+                return chunk, cleaned
+    return _source_excerpt(chunks)
+
+
 def _citation(chunks):
-    chunk, snippet = _source_excerpt(chunks)
+    chunk, snippet = _citation_excerpt(chunks)
     return [] if not chunk or not snippet else [{"chunk_id": str(chunk.id), "snippet": snippet}]
+
+
+def _citation_for_text(chunks, reference_text: str):
+    reference_terms = {
+        term
+        for term in re.findall(r"[a-z0-9_]+", reference_text.lower())
+        if len(term) >= 4
+    }
+    best = None
+    for chunk in chunks:
+        compact = " ".join(chunk.content.split())
+        sentences = re.findall(r"[^.!?]{35,260}[.!?]", compact)
+        for sentence in sentences:
+            cleaned = _clean_source_display_text(sentence)
+            if len(cleaned) < 35 or cleaned.endswith("?") or STRUCTURAL_CITATION_RE.search(cleaned):
+                continue
+            sentence_terms = set(re.findall(r"[a-z0-9_]+", cleaned.lower()))
+            score = len(reference_terms & sentence_terms)
+            reference_lower = reference_text.lower()
+            cleaned_lower = cleaned.lower()
+            if ("key-value" in reference_lower or "key value" in reference_lower) and (
+                "key-value" in cleaned_lower or "key value" in cleaned_lower
+            ):
+                score += 3
+            if "numbers" in reference_lower and "numbers" in cleaned_lower:
+                score += 2
+            if "strings" in reference_lower and "strings" in cleaned_lower:
+                score += 2
+            if "do not have to be" in reference_lower and "do not have to be" in cleaned_lower:
+                score += 2
+            if "python dictionary" in reference_lower and "python dictionary" in cleaned_lower:
+                score += 2
+            if best is None or score > best[0]:
+                best = (score, chunk, cleaned)
+    if best and best[0] > 0:
+        _, chunk, snippet = best
+        return [{"chunk_id": str(chunk.id), "snippet": snippet}]
+    return _citation(chunks)
 
 
 def _matches_all(text: str, terms: list[str]) -> bool:
@@ -97,6 +184,17 @@ def _matches_all(text: str, terms: list[str]) -> bool:
 
 def _matches_any(text: str, terms: list[str]) -> bool:
     return any(term.lower() in text for term in terms)
+
+
+def _improve_follow_up(profile: dict | None, level: str, follow_up: str | None) -> str | None:
+    if not profile or not follow_up:
+        return follow_up
+    topic_terms = [term.lower() for term in profile.get("topic_terms", [])]
+    if "dictionary" in topic_terms:
+        if level == "intermediate":
+            return 'In student = {"name": "Asha"}, identify the key and the value, then explain why student["name"] returns "Asha".'
+        return 'In student = {"name": "Asha"}, what is the key, what is the value, and how would you get that value from the dictionary?'
+    return follow_up
 
 
 def _mock_turn(message: str, chunks, level: str, open_item: Misconception | None,
@@ -120,6 +218,7 @@ def _mock_turn(message: str, chunks, level: str, open_item: Misconception | None
         and not _matches_any(lower, profile.get("misconception_exclude", []))
     )
     if misconception:
+        citations = _citation_for_text(chunks, profile["remediation"])
         return TutorTurn(intent="answer_attempt", grounded=True, answer="", citations=citations,
                          misconception_detected=True,
                          misconception={"description": profile["description"], "evidence": message},
@@ -128,10 +227,11 @@ def _mock_turn(message: str, chunks, level: str, open_item: Misconception | None
                          verification_verdict=None, follow_up_question=None)
     topic_terms = profile.get("topic_terms", []) if profile else []
     if profile and "?" not in message and _matches_any(lower, topic_terms):
+        follow_up = _improve_follow_up(profile, level, profile.get("beginner_follow_up"))
         return TutorTurn(intent="answer_attempt", grounded=True,
                          answer=profile.get("correct_answer", "Your answer matches the lesson evidence."), citations=citations,
                          misconception_detected=False, misconception=None, remediation=None, verification_question=None,
-                         verification_verdict=None, follow_up_question=profile.get("beginner_follow_up"))
+                         verification_verdict=None, follow_up_question=follow_up)
     if not chunks:
         return TutorTurn(intent="question", grounded=False, answer="The teacher's material does not cover that yet.", citations=[],
                          misconception_detected=False, misconception=None, remediation=None, verification_question=None,
@@ -139,7 +239,8 @@ def _mock_turn(message: str, chunks, level: str, open_item: Misconception | None
     profile_question = bool(profile and _matches_all(lower, topic_terms))
     if profile_question:
         answer = profile[f"{level}_answer"]
-        follow_up = profile[f"{level}_follow_up"]
+        follow_up = _improve_follow_up(profile, level, profile[f"{level}_follow_up"])
+        citations = _citation_for_text(chunks, answer)
     else:
         _, excerpt = _source_excerpt(chunks)
         prefix = "The relevant source section explains:" if level == "intermediate" else "Here is the key idea from your lesson:"
@@ -449,10 +550,12 @@ def process_chat(db: Session, session: LearningSession, student_text: str) -> di
     citations = []
     for citation in turn.citations:
         data = citation.model_dump()
-        data["snippet"] = _clean_citation_text(data["snippet"])
+        data["snippet"] = _clean_source_display_text(data["snippet"])
         source_chunk = chunk_by_id.get(citation.chunk_id)
         if source_chunk:
-            heading = _clean_citation_text(source_chunk.content.splitlines()[0])
+            heading = _clean_source_display_text(source_chunk.content.splitlines()[0])
+            if len(heading) > 80 or STRUCTURAL_CITATION_RE.search(heading):
+                heading = ""
             data["label"] = heading or f"Source section {source_chunk.chunk_index + 1}"
         citations.append(data)
     if turn.intent == "off_topic" or not turn.grounded:

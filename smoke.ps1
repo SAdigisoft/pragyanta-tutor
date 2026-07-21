@@ -1,5 +1,5 @@
 param(
-    [string]$BaseUrl = "http://localhost:8000",
+    [string]$BaseUrl = "http://localhost:9000",
     [switch]$ResetDemoData
 )
 

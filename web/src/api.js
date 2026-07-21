@@ -29,6 +29,13 @@ export async function getLessons() {
   return [...lessons]
 }
 
+export async function getLesson(lessonId) {
+  if (!useMocks) return request(`/api/lessons/${lessonId}`)
+  await delay(180)
+  const lesson = lessons.find((item) => item.lesson_id === lessonId) || LESSON
+  return { ...lesson, text: 'A list is mutable, meaning its contents can be changed after creation. A tuple is immutable.' }
+}
+
 export async function createLesson(input) {
   if (!useMocks) {
     if (input.file) { const data = new FormData(); data.append('file', input.file); if (input.title) data.append('title', input.title); return request('/api/lessons', { method: 'POST', body: data }) }
@@ -39,6 +46,21 @@ export async function createLesson(input) {
   const item = { lesson_id: `lesson-${Date.now()}`, title: input.title || input.file?.name?.replace(/\.pdf$/i, '') || 'Untitled lesson', chunk_count: 6, created_at: new Date().toISOString() }
   lessons = [item, ...lessons]
   return item
+}
+
+export async function updateLesson(lessonId, input) {
+  if (!useMocks) return request(`/api/lessons/${lessonId}`, { method: 'PATCH', body: JSON.stringify(input) })
+  await delay(260)
+  lessons = lessons.map((item) => item.lesson_id === lessonId ? { ...item, title: input.title || item.title, chunk_count: input.text ? 6 : item.chunk_count, question_count: input.text ? 0 : item.question_count, featured_prompt: input.text ? null : item.featured_prompt } : item)
+  return lessons.find((item) => item.lesson_id === lessonId)
+}
+
+export async function deleteLesson(lessonId) {
+  if (!useMocks) return request(`/api/lessons/${lessonId}`, { method: 'DELETE' })
+  await delay(260)
+  lessons = lessons.filter((item) => item.lesson_id !== lessonId)
+  sessions = sessions.filter((item) => item.lesson_id !== lessonId)
+  return { lesson_id: lessonId, deleted: true }
 }
 
 export async function createSession(payload) {

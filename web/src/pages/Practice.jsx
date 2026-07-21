@@ -61,7 +61,7 @@ export default function Practice() {
   }
 
   return <div className="page practice-page">
-    <Header mode="student" title={title}>
+    <Header mode="student" title={title} roleTargets={{ teacher: `/report/${lessonId}?role=teacher`, student: `/practice/${lessonId}?role=student` }}>
       <div className="level-control">
         <span className="level-label">Difficulty</span>
         <div className="level-toggle" role="group" aria-label="Difficulty">

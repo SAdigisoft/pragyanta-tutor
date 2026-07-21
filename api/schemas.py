@@ -25,6 +25,11 @@ class LessonTextCreate(BaseModel):
     text: str = Field(min_length=1)
 
 
+class LessonUpdate(BaseModel):
+    title: str | None = Field(default=None, min_length=1, max_length=200)
+    text: str | None = Field(default=None, min_length=1)
+
+
 class SessionCreate(BaseModel):
     lesson_id: str
     learner_level: Literal["beginner", "intermediate"] = "beginner"

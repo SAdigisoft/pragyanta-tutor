@@ -8,6 +8,7 @@ const sessionPreview = (session) => session.last_message || `${session.learner_l
 export default function AppSidebar({ collapsed, mobileOpen, onCollapse, onMobileClose }) {
   const location = useLocation()
   const navigate = useNavigate()
+  const currentRole = new URLSearchParams(location.search).get('role') || 'teacher'
   const [lessons, setLessons] = useState([])
   const [sessions, setSessions] = useState([])
   const [query, setQuery] = useState('')
@@ -20,7 +21,7 @@ export default function AppSidebar({ collapsed, mobileOpen, onCollapse, onMobile
       if (active) { setLessons(lessonRows); setSessions(sessionRows) }
     }).catch(() => {})
     return () => { active = false }
-  }, [location.pathname])
+  }, [location.pathname, location.search])
 
   const sessionId = location.pathname.match(/^\/learn\/([^/]+)/)?.[1]
   const lessonId = location.pathname.match(/^\/(?:practice|report)\/([^/]+)/)?.[1]
@@ -49,7 +50,7 @@ export default function AppSidebar({ collapsed, mobileOpen, onCollapse, onMobile
     {mobileOpen && <button className="sidebar-backdrop" aria-label="Close navigation" onClick={() => onMobileClose()} />}
     <aside className={`app-sidebar ${collapsed ? 'is-collapsed' : ''} ${mobileOpen ? 'is-mobile-open' : ''}`} role="navigation" aria-label="Main navigation">
       <div className="sidebar-top">
-        <Link className="sidebar-brand" to="/?role=teacher" onClick={closeAndNavigate} aria-label="Pragyanta home"><span className="sidebar-brand-mark"><BookIcon size={30} /></span><span className="sidebar-brand-copy"><strong>Pragyanta</strong><small>Adaptive tutor</small></span></Link>
+        <Link className="sidebar-brand" to={`/?role=${currentRole}`} onClick={closeAndNavigate} aria-label="Pragyanta home"><span className="sidebar-brand-mark"><BookIcon size={30} /></span><span className="sidebar-brand-copy"><strong>Pragyanta</strong><small>Adaptive tutor</small></span></Link>
         <button className="sidebar-collapse" onClick={onCollapse} aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'} title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}><PanelIcon /></button>
         <button className="sidebar-mobile-close" onClick={() => onMobileClose()} aria-label="Close navigation"><XIcon /></button>
       </div>
@@ -57,10 +58,10 @@ export default function AppSidebar({ collapsed, mobileOpen, onCollapse, onMobile
       <button className="sidebar-new-chat" onClick={startChat} disabled={starting} title="Start a new tutoring conversation"><PlusIcon /><span>{starting ? 'Starting…' : 'New tutoring chat'}</span></button>
 
       <nav className="sidebar-primary">
-        <Link className={routeClass('/')} to="/?role=teacher" onClick={closeAndNavigate} title="Lesson library"><BookIcon size={19} /><span>Lesson library</span></Link>
+        <Link className={routeClass('/')} to={`/?role=${currentRole}`} onClick={closeAndNavigate} title="Lesson library"><BookIcon size={19} /><span>Lesson library</span></Link>
         <Link className={location.pathname.startsWith('/practice/') ? 'active' : !activeLessonId ? 'disabled' : ''} to={activeLessonId ? `/practice/${activeLessonId}?role=student` : '/?role=student'} onClick={closeAndNavigate} title="Practice"><TargetIcon size={19} /><span>Practice</span></Link>
-        <Link className={location.pathname.startsWith('/report/') ? 'active' : !activeLessonId ? 'disabled' : ''} to={activeLessonId ? `/report/${activeLessonId}?role=teacher` : '/?role=teacher'} onClick={closeAndNavigate} title="Learning reports"><ChartIcon /><span>Learning reports</span></Link>
-        <Link to="/?role=teacher#upload" onClick={closeAndNavigate} title="Upload lesson"><PlusIcon /><span>Upload lesson</span></Link>
+        {currentRole === 'teacher' && <Link className={location.pathname.startsWith('/report/') ? 'active' : !activeLessonId ? 'disabled' : ''} to={activeLessonId ? `/report/${activeLessonId}?role=teacher` : '/?role=teacher'} onClick={closeAndNavigate} title="Learning reports"><ChartIcon /><span>Learning reports</span></Link>}
+        {currentRole === 'teacher' && <Link to="/?role=teacher#upload" onClick={closeAndNavigate} title="Upload lesson"><PlusIcon /><span>Upload lesson</span></Link>}
       </nav>
 
       <div className="sidebar-history">

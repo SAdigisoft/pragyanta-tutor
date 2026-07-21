@@ -14,7 +14,7 @@ export default function Report() {
   const [error, setError] = useState('')
   useEffect(() => { getReport(lessonId).then(setData).catch(() => setError('The learning-gap report could not be loaded.')) }, [lessonId])
   const changeState = async (next) => { setState(next); setError(''); if (next === 'error') { setError('The learning-gap report could not be loaded. Refresh to try again.'); return } const result = await getReport(lessonId); if (next === 'empty') { result.misconceptions = []; result.summary = { total: 0, resolved: 0, unresolved: 0, open: 0 } } setData(result) }
-  return <div className="page report-page"><Header mode="teacher" />
+  return <div className="page report-page"><Header mode="teacher" roleTargets={{ teacher: `/report/${lessonId}?role=teacher`, student: `/practice/${lessonId}?role=student` }} />
     <main className="report-main">
       <Link className="report-crumb" to="/?role=teacher"><BookIcon size={23} /><span>›</span>{data?.lesson_title || 'Lesson report'}</Link>
       <section className="report-title"><div><span className="overline"><i />Teacher evidence</span><h1>Misconception report</h1></div></section>

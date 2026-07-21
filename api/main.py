@@ -7,17 +7,17 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
-from sqlalchemy import func, select
+from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
 from api.database import get_db
 from api.models import Chunk, LearnerLevel, LearningSession, Lesson, Message, Misconception, MisconceptionStatus, PracticeQuestion
 from api.rag import chunk_text, embed, extract_pdf_text
-from api.schemas import ChatCreate, LessonTextCreate, SessionCreate, SessionLevelUpdate
+from api.schemas import ChatCreate, LessonTextCreate, LessonUpdate, SessionCreate, SessionLevelUpdate
 from api.tutor import process_chat
 
 app = FastAPI(title="Pragyanta Tutor API", version="1.0.0")
-cors_origins = [origin.strip().rstrip("/") for origin in os.getenv("CORS_ORIGINS", "http://localhost:5173").split(",") if origin.strip()]
+cors_origins = [origin.strip().rstrip("/") for origin in os.getenv("CORS_ORIGINS", "http://localhost:6173").split(",") if origin.strip()]
 app.add_middleware(CORSMiddleware, allow_origins=cors_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 
@@ -47,6 +47,10 @@ def _lesson_response(db: Session, lesson: Lesson):
     )
     return {"lesson_id": str(lesson.id), "title": lesson.title, "created_at": lesson.created_at.isoformat(),
             "chunk_count": count, "question_count": question_count, "featured_prompt": featured_prompt}
+
+
+def _lesson_detail_response(db: Session, lesson: Lesson):
+    return {**_lesson_response(db, lesson), "text": lesson.raw_text}
 
 
 @app.post("/api/lessons", status_code=201)
@@ -94,6 +98,54 @@ async def create_lesson(request: Request, db: Session = Depends(get_db)):
 @app.get("/api/lessons")
 def list_lessons(db: Session = Depends(get_db)):
     return [_lesson_response(db, lesson) for lesson in db.scalars(select(Lesson).order_by(Lesson.created_at.desc()))]
+
+
+@app.get("/api/lessons/{lesson_id}")
+def get_lesson(lesson_id: UUID, db: Session = Depends(get_db)):
+    lesson = db.get(Lesson, lesson_id)
+    if not lesson:
+        raise HTTPException(404, "Lesson not found")
+    return _lesson_detail_response(db, lesson)
+
+
+@app.patch("/api/lessons/{lesson_id}")
+def update_lesson(lesson_id: UUID, payload: LessonUpdate, db: Session = Depends(get_db)):
+    lesson = db.get(Lesson, lesson_id)
+    if not lesson:
+        raise HTTPException(404, "Lesson not found")
+    if payload.title is None and payload.text is None:
+        raise HTTPException(422, "Send a lesson title or lesson text to update")
+    if payload.title is not None:
+        title = payload.title.strip()
+        if not title:
+            raise HTTPException(422, "Lesson title cannot be empty")
+        lesson.title = title
+    if payload.text is not None:
+        text = payload.text.strip()
+        if not text:
+            raise HTTPException(422, "Lesson text cannot be empty")
+        pieces = chunk_text(text)
+        vectors = embed([piece.content for piece in pieces])
+        db.execute(delete(LearningSession).where(LearningSession.lesson_id == lesson.id))
+        db.execute(delete(PracticeQuestion).where(PracticeQuestion.lesson_id == lesson.id))
+        db.execute(delete(Chunk).where(Chunk.lesson_id == lesson.id))
+        lesson.raw_text = text
+        db.flush()
+        db.add_all([Chunk(lesson_id=lesson.id, chunk_index=piece.chunk_index, content=piece.content, embedding=vector)
+                    for piece, vector in zip(pieces, vectors, strict=True)])
+    db.commit()
+    db.refresh(lesson)
+    return _lesson_response(db, lesson)
+
+
+@app.delete("/api/lessons/{lesson_id}")
+def delete_lesson(lesson_id: UUID, db: Session = Depends(get_db)):
+    lesson = db.get(Lesson, lesson_id)
+    if not lesson:
+        raise HTTPException(404, "Lesson not found")
+    db.delete(lesson)
+    db.commit()
+    return {"lesson_id": str(lesson_id), "deleted": True}
 
 
 @app.get("/api/sessions")

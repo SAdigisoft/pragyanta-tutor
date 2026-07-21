@@ -9,7 +9,7 @@ from sqlalchemy import select
 
 from api import tutor
 from api.database import SessionLocal
-from api.models import Chunk, LearnerLevel, LearningSession, PracticeQuestion
+from api.models import Chunk, LearnerLevel, LearningSession, Lesson, PracticeQuestion
 
 
 def _assert_error(response, expected_status: int) -> None:
@@ -59,6 +59,48 @@ def test_create_pdf_lesson(client: TestClient) -> None:
 def test_create_lesson_rejects_empty_body(client: TestClient) -> None:
     response = client.post("/api/lessons", json={})
     _assert_error(response, 422)
+
+
+def test_update_and_delete_lesson(client: TestClient) -> None:
+    created = client.post(
+        "/api/lessons",
+        json={"title": "Contract test: editable lesson", "text": "A test lesson can be renamed and deleted."},
+    )
+    assert created.status_code == 201, created.text
+    lesson_id = created.json()["lesson_id"]
+
+    renamed = client.patch(f"/api/lessons/{lesson_id}", json={"title": "Contract test: renamed lesson"})
+    assert renamed.status_code == 200, renamed.text
+    assert renamed.json()["lesson_id"] == lesson_id
+    assert renamed.json()["title"] == "Contract test: renamed lesson"
+
+    detail = client.get(f"/api/lessons/{lesson_id}")
+    assert detail.status_code == 200, detail.text
+    assert detail.json()["text"] == "A test lesson can be renamed and deleted."
+
+    edited = client.patch(
+        f"/api/lessons/{lesson_id}",
+        json={"title": "Contract test: edited lesson", "text": "Edited lesson material creates new chunks."},
+    )
+    assert edited.status_code == 200, edited.text
+    assert edited.json()["title"] == "Contract test: edited lesson"
+    assert edited.json()["chunk_count"] >= 1
+    updated_detail = client.get(f"/api/lessons/{lesson_id}")
+    assert updated_detail.status_code == 200, updated_detail.text
+    assert updated_detail.json()["text"] == "Edited lesson material creates new chunks."
+
+    missing_update = client.patch(f"/api/lessons/{uuid4()}", json={"title": "Missing"})
+    _assert_error(missing_update, 404)
+
+    deleted = client.delete(f"/api/lessons/{lesson_id}")
+    assert deleted.status_code == 200, deleted.text
+    assert deleted.json() == {"lesson_id": lesson_id, "deleted": True}
+
+    with SessionLocal() as db:
+        assert db.get(Lesson, UUID(lesson_id)) is None
+
+    missing_delete = client.delete(f"/api/lessons/{lesson_id}")
+    _assert_error(missing_delete, 404)
 
 
 def test_create_session_and_reject_bad_lesson(client: TestClient, lesson: dict) -> None:

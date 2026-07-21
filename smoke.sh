@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-BASE_URL="${1:-http://localhost:8000}"
+BASE_URL="${1:-http://localhost:9000}"
 BASE_URL="${BASE_URL%/}"
 RESET_DEMO_DATA="${2:-}"
 SMOKE_TMP="$(mktemp -d)"

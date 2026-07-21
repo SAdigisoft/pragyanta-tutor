@@ -1,5 +1,37 @@
 # Pragyanta
 
+## Judge quick start
+
+This repository is ready for local judging. The default path needs Docker Desktop, but it does not need an OpenAI API key or Ollama:
+
+```powershell
+Copy-Item .env.example .env
+docker compose up --build
+```
+
+Then open <http://localhost:6173>. The API is available at <http://localhost:9000/docs>.
+
+The first startup creates the database and loads 14 bundled Python lessons with grounded practice questions. Open the first lesson marked **Guided showcase** and follow the built-in flow: ask the supported question, submit the tuple mutability misconception, answer the transfer question, and open the teacher report. The deterministic mock provider makes this path repeatable for judges while FastAPI, PostgreSQL, pgvector retrieval, citations, sessions, misconception state, and reports remain real.
+
+For a custom lesson test, use **Upload lesson** in the teacher view and upload a selectable-text PDF. Reusable lesson-writing instructions and sample material are in [docs/PDF_LESSON_CREATION_PROMPT.md](docs/PDF_LESSON_CREATION_PROMPT.md) and [docs/sample-lessons/](docs/sample-lessons/). The teacher/student switch is a demo role view; authentication is intentionally outside this hackathon scope.
+
+Run the checks from the repository root:
+
+```powershell
+docker compose exec api pytest -q
+npm --prefix web test
+npm --prefix web run build
+.\smoke.ps1 http://localhost:9000
+```
+
+## How Codex and GPT-5.6 accelerated the build
+
+Codex was used as the implementation partner across the full workflow: it inspected the existing React, FastAPI, PostgreSQL, and pgvector code; traced the lesson-to-tutor data flow; fixed the non-conflicting `6173/9000` ports and CORS contract; improved lesson ingestion and source-evidence selection; added lesson CRUD; repaired teacher/student role switching; and created focused API, frontend, smoke, and Playwright checks. Codex also generated reproducible submission screenshots and the seven-scene voice-over storyboard in `docs/`.
+
+GPT-5.6 was used through Codex for architecture decisions, debugging, code changes, test design, lesson-content quality review, grounded-tutor behavior, and submission documentation. The key product decisions were to keep the tutor bounded by teacher-provided sources, make the detect/remediate/verify loop persistent and inspectable, provide deterministic keyless mode for reliable judging, and keep the live OpenAI provider optional rather than pretending that mock responses are live model output.
+
+The result is a testable local submission: judges can start the stack, inspect the source-grounded answer and citation, trigger remediation, verify resolution, practise, and review the teacher report without configuring a model key.
+
 Pragyanta is an evidence-based adaptive tutor. A teacher supplies trusted lesson material; the tutor answers from that material with citations, detects misconceptions in student responses, re-teaches them, verifies understanding, and exposes the learning gaps in a teacher report.
 
 The core product loop is **detect → remediate → verify**. It is deliberately not a general-purpose chatbot.
@@ -17,9 +49,9 @@ docker compose up --build
 
 Open:
 
-- Web: <http://localhost:5173>
-- API health: <http://localhost:8000/health>
-- API docs: <http://localhost:8000/docs>
+- Web: <http://localhost:6173>
+- API health: <http://localhost:9000/health>
+- API docs: <http://localhost:9000/docs>
 
 The first startup applies Alembic migrations and loads all 14 bundled Python lessons plus their grounded practice bank idempotently. Database data is retained in the `pragyanta_postgres_data` Docker volume.
 
@@ -27,6 +59,9 @@ Keyless mode is intentionally limited: it validates every screen, route, databas
 
 ```dotenv
 OPENAI_API_KEY=
+CORS_ORIGINS=http://localhost:6173,http://127.0.0.1:6173
+API_PORT=9000
+WEB_PORT=6173
 AI_PROVIDER=mock
 MOCK_OPENAI=1
 VITE_MOCK=0
@@ -45,53 +80,7 @@ The hackathon review path requires only Docker—no OpenAI key and no Ollama ins
 3. Answer the verification: **It raises an error because a tuple is immutable and cannot be changed.**
 4. Open the teacher report and inspect the stored resolved misconception.
 
-The keyless tutor response is deterministic, but the lesson chunks, vector retrieval, exact citation, session, messages, misconception transition, and report all use the real FastAPI/PostgreSQL/pgvector stack. Ollama remains an optional local experiment and is not required or claimed for the public reviewer path.
-
-## Run with real local AI through Ollama
-
-Ollama provides real local embeddings and structured tutor responses without an API key. Install Ollama on the host, then pull the two configured models:
-
-```powershell
-ollama pull qwen2.5:3b
-ollama pull nomic-embed-text
-```
-
-The embedding model returns 768 dimensions. The backend zero-pads them to the existing PostgreSQL `vector(1536)` schema; zero-padding preserves cosine similarity and avoids loading a second multi-gigabyte model on modest GPUs. Allow Docker to reach the host Ollama service, then use:
-
-```powershell
-[Environment]::SetEnvironmentVariable("OLLAMA_HOST", "0.0.0.0:11434", "User")
-```
-
-Restart Ollama after setting the variable. Restrict port 11434 to private/local networks in Windows Firewall. If this Docker Desktop installation cannot resolve `host.docker.internal`, use the IPv4 address shown for `vEthernet (WSL (Hyper-V firewall))` as `OLLAMA_BASE_URL`; this repository's ignored local `.env` already contains the detected address for this machine.
-
-```dotenv
-AI_PROVIDER=ollama
-OLLAMA_BASE_URL=http://host.docker.internal:11434
-OLLAMA_CHAT_MODEL=qwen2.5:3b
-OLLAMA_EMBED_MODEL=nomic-embed-text
-VITE_MOCK=0
-```
-
-Recreate the API container after changing provider settings:
-
-```powershell
-docker compose up -d --force-recreate api
-docker compose exec api python -m api.scripts.reindex_embeddings
-```
-
-Reindexing is required whenever the embedding provider or model changes; vectors from different models must never be compared in the same pgvector search.
-
-Keep `AI_PROVIDER=mock` for automated tests. Run the live 25-case tutor evaluation separately with:
-
-```powershell
-docker compose exec -e AI_PROVIDER=ollama api python api/tests/eval_tutor.py
-```
-
-Verify the critical live-model state transition through the public HTTP API with:
-
-```powershell
-docker compose exec api python -m api.scripts.verify_ollama_journey
-```
+The keyless tutor response is deterministic, but the lesson chunks, vector retrieval, exact citation, session, messages, misconception transition, and report all use the real FastAPI/PostgreSQL/pgvector stack. No Ollama installation is required for the public reviewer path.
 
 ## Database and reproducible screen data
 
@@ -127,14 +116,14 @@ npm --prefix web run build
 The smoke journey verifies health → seed lesson → session → tutor turn → report:
 
 ```powershell
-.\smoke.ps1 http://localhost:8000 -ResetDemoData
+.\smoke.ps1 http://localhost:9000 -ResetDemoData
 ```
 
 On macOS/Linux:
 
 ```bash
 chmod +x smoke.sh
-./smoke.sh http://localhost:8000 --reset-demo-data
+./smoke.sh http://localhost:9000 --reset-demo-data
 ```
 
 For a deployed API, omit the local Docker cleanup option and pass the public API URL: `.\smoke.ps1 https://your-api.example`. Run the reset-enabled command only against the local Docker environment.
@@ -166,9 +155,9 @@ The committed 25-case golden set covers genuine misconceptions, correct-answer f
 ## Architecture
 
 ```text
-React 18 + Vite (5173)
+React 18 + Vite (host 6173, container 5173)
           ↓ JSON HTTP
-FastAPI + SQLAlchemy (8000)
+FastAPI + SQLAlchemy (host 9000, container 8000)
           ↓
 PostgreSQL 16 + pgvector
 ```
@@ -200,7 +189,9 @@ All expected API errors are returned as JSON with a safe `error` message; raw mo
 ## Demo, architecture, and deployment
 
 - `docs/DEMO.md` — exact three-minute recording runbook
+- `docs/TONIGHT_SUBMISSION_GUIDE.md` — PDF chapter prompt, voiceover, and final submission order
 - `docs/SUBMISSION.md` — Devpost-ready submission copy
+- `docs/sample-lessons/` — reusable sample lesson material for upload testing
 - `docs/ARCHITECTURE.md` — application and data-flow architecture
 - `docs/RELEASE_CHECKLIST.md` — local, demo, and production gates
 - `deploy/DEPLOYMENT.md` — credential-free Render/Railway preparation and public smoke checks

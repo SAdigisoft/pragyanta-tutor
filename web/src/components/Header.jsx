@@ -1,16 +1,53 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { BookIcon, UserIcon } from './Icons'
 
-export default function Header({ mode = 'teacher', title, children }) {
+export default function Header({ mode = 'teacher', title, children, roleTargets }) {
   const location = useLocation()
   const navigate = useNavigate()
   const queryRole = new URLSearchParams(location.search).get('role')
   const selectedRole = queryRole || mode
+
   const selectRole = (role) => {
-    if (role === 'teacher') navigate(`${location.pathname.startsWith('/report') ? location.pathname : '/'}?role=teacher`)
-    else if (location.pathname.startsWith('/learn/')) navigate(`${location.pathname}?role=student`)
-    else navigate('/?role=student')
+    if (roleTargets?.[role]) {
+      navigate(roleTargets[role])
+      return
+    }
+    const reportMatch = location.pathname.match(/^\/report\/([^/]+)/)
+    const practiceMatch = location.pathname.match(/^\/practice\/([^/]+)/)
+    const learnMatch = location.pathname.match(/^\/learn\/([^/]+)/)
+
+    if (role === 'teacher') {
+      if (reportMatch) {
+        navigate(`${location.pathname}?role=teacher`)
+        return
+      }
+      if (practiceMatch) {
+        navigate(`/report/${practiceMatch[1]}?role=teacher`)
+        return
+      }
+      if (learnMatch) {
+        navigate('/?role=teacher')
+        return
+      }
+      navigate('/?role=teacher')
+      return
+    }
+
+    if (learnMatch) {
+      navigate(`${location.pathname}?role=student`)
+      return
+    }
+    if (reportMatch) {
+      navigate(`/practice/${reportMatch[1]}?role=student`)
+      return
+    }
+    if (practiceMatch) {
+      navigate(`${location.pathname}?role=student`)
+      return
+    }
+    navigate('/?role=student')
   }
+
   return (
     <header className="site-header">
       <div className="header-inner">

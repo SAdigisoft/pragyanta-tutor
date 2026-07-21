@@ -1,7 +1,7 @@
 const { test, expect } = require('@playwright/test')
 
-const WEB = 'http://localhost:5173'
-const API = 'http://localhost:8000'
+const WEB = process.env.WEB_URL || `http://127.0.0.1:${process.env.PW_WEB_PORT || 42734}`
+const API = process.env.API_URL || process.env.VITE_API_URL || 'http://localhost:9000'
 
 test.describe('Pragyanta product journeys', () => {
   test('uses the selected lesson throughout a new tutor session', async ({ page, request }) => {
@@ -34,6 +34,26 @@ test.describe('Pragyanta product journeys', () => {
     await page.getByRole('navigation', { name: 'Main navigation' }).getByRole('button', { name: 'New tutoring chat' }).click()
     await expect(page).toHaveURL(/\?role=student#lessons$/)
     await expect(page.locator('#lessons')).toBeVisible()
+  })
+
+  test('role toggle refreshes the landing experience', async ({ page }) => {
+    await page.goto(`${WEB}/?role=teacher`)
+    await expect(page.locator('h1')).toHaveText('Teach from sources you trust.')
+    await expect(page.locator('#upload')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Report', exact: true }).first()).toBeVisible()
+
+    await page.getByRole('button', { name: 'Student', exact: true }).click()
+    await expect(page).toHaveURL(/\?role=student$/)
+    await expect(page.locator('h1')).toHaveText('Learn from sources your teacher trusts.')
+    await expect(page.locator('#upload')).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Report', exact: true })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Student', exact: true })).toHaveAttribute('aria-pressed', 'true')
+
+    await page.getByRole('button', { name: 'Teacher', exact: true }).click()
+    await expect(page).toHaveURL(/\?role=teacher$/)
+    await expect(page.locator('h1')).toHaveText('Teach from sources you trust.')
+    await expect(page.locator('#upload')).toBeVisible()
+    await expect(page.getByRole('button', { name: 'Teacher', exact: true })).toHaveAttribute('aria-pressed', 'true')
   })
 
   test('practice header is usable at desktop and mobile widths', async ({ page, request }) => {
