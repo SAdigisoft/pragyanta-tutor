@@ -1,5 +1,7 @@
 # Pragyanta
 
+> **Judges & visitors:** [DEMO.md](DEMO.md) — how to run and walk through the demo · [SUBMISSION.md](SUBMISSION.md) — the project story (inspiration, what it does, tech stack).
+
 ## Judge quick start
 
 This repository is ready for local judging. The default path needs Docker Desktop, but it does not need an OpenAI API key or Ollama:
