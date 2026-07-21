@@ -14,6 +14,9 @@ web/playwright-report/
 
 # Local-only submission material (never publish)
 docs/
+DEMO.md
+SUBMISSION.md
+deploy/DEPLOYMENT.md
 NOTES.md
 codex.md
 artifacts/
