@@ -13,7 +13,7 @@ Then open <http://localhost:6173>. The API is available at <http://localhost:900
 
 The first startup creates the database and loads 14 bundled Python lessons with grounded practice questions. Open the first lesson marked **Guided showcase** and follow the built-in flow: ask the supported question, submit the tuple mutability misconception, answer the transfer question, and open the teacher report. The deterministic mock provider makes this path repeatable for judges while FastAPI, PostgreSQL, pgvector retrieval, citations, sessions, misconception state, and reports remain real.
 
-For a custom lesson test, use **Upload lesson** in the teacher view and upload a selectable-text PDF. Reusable lesson-writing instructions and sample material are in [docs/PDF_LESSON_CREATION_PROMPT.md](docs/PDF_LESSON_CREATION_PROMPT.md) and [docs/sample-lessons/](docs/sample-lessons/). The teacher/student switch is a demo role view; authentication is intentionally outside this hackathon scope.
+For a custom lesson test, use **Upload lesson** in the teacher view and upload a selectable-text PDF. The teacher/student switch is a demo role view; authentication is intentionally outside this hackathon scope.
 
 Run the checks from the repository root:
 
@@ -26,7 +26,7 @@ npm --prefix web run build
 
 ## How Codex and GPT-5.6 accelerated the build
 
-Codex was used as the implementation partner across the full workflow: it inspected the existing React, FastAPI, PostgreSQL, and pgvector code; traced the lesson-to-tutor data flow; fixed the non-conflicting `6173/9000` ports and CORS contract; improved lesson ingestion and source-evidence selection; added lesson CRUD; repaired teacher/student role switching; and created focused API, frontend, smoke, and Playwright checks. Codex also generated reproducible submission screenshots and the seven-scene voice-over storyboard in `docs/`.
+Codex was used as the implementation partner across the full workflow: it inspected the existing React, FastAPI, PostgreSQL, and pgvector code; traced the lesson-to-tutor data flow; fixed the non-conflicting `6173/9000` ports and CORS contract; improved lesson ingestion and source-evidence selection; added lesson CRUD; repaired teacher/student role switching; and created focused API, frontend, smoke, and Playwright checks. Codex also generated the reproducible submission screenshots in `artifacts/`.
 
 GPT-5.6 was used through Codex for architecture decisions, debugging, code changes, test design, lesson-content quality review, grounded-tutor behavior, and submission documentation. The key product decisions were to keep the tutor bounded by teacher-provided sources, make the detect/remediate/verify loop persistent and inspectable, provide deterministic keyless mode for reliable judging, and keep the live OpenAI provider optional rather than pretending that mock responses are live model output.
 
@@ -186,14 +186,8 @@ docker compose exec db psql -U postgres -d pragyanta -c "\dx vector"
 
 All expected API errors are returned as JSON with a safe `error` message; raw model output and tracebacks are never sent to the browser.
 
-## Demo, architecture, and deployment
+## Deployment
 
-- `docs/DEMO.md` — exact three-minute recording runbook
-- `docs/TONIGHT_SUBMISSION_GUIDE.md` — PDF chapter prompt, voiceover, and final submission order
-- `docs/SUBMISSION.md` — Devpost-ready submission copy
-- `docs/sample-lessons/` — reusable sample lesson material for upload testing
-- `docs/ARCHITECTURE.md` — application and data-flow architecture
-- `docs/RELEASE_CHECKLIST.md` — local, demo, and production gates
 - `deploy/DEPLOYMENT.md` — credential-free Render/Railway preparation and public smoke checks
 
 `render.yaml` is deployment-ready, but no public deployment URL is claimed until a provider account creates and verifies it.
