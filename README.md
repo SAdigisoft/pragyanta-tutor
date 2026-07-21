@@ -1,10 +1,10 @@
 # Pragyanta
 
-> **Judges & visitors:** [DEMO.md](DEMO.md) — how to run and walk through the demo · [SUBMISSION.md](SUBMISSION.md) — the project story (inspiration, what it does, tech stack).
+> **Judges & visitors:** [docs/DEMO.md](docs/DEMO.md) - how to run and walk through the full local demo. [docs/SUBMISSION.md](docs/SUBMISSION.md) - the project story, inspiration, features, and tech stack.
 
 ## Judge quick start
 
-This repository is ready for local judging. The default path needs Docker Desktop, but it does not need an OpenAI API key or Ollama:
+This repository is ready for local judging. The submitted demo is a YouTube walkthrough plus this reproducible full-stack local run. The default path needs Docker Desktop, but it does not need an OpenAI API key or Ollama:
 
 ```powershell
 Copy-Item .env.example .env
@@ -192,4 +192,4 @@ All expected API errors are returned as JSON with a safe `error` message; raw mo
 
 - `deploy/DEPLOYMENT.md` — credential-free Render/Railway preparation and public smoke checks
 
-`render.yaml` is deployment-ready, but no public deployment URL is claimed until a provider account creates and verifies it.
+`render.yaml` is deployment-ready for a future Render-style deployment, but no public deployment URL is claimed for the hackathon submission unless a provider account creates and verifies it. Vercel by itself is not enough for this application because the backend needs FastAPI plus PostgreSQL with pgvector.
