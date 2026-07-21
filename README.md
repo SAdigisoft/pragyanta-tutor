@@ -1,6 +1,6 @@
 # Pragyanta
 
-> **Judges & visitors:** [docs/DEMO.md](docs/DEMO.md) - how to run and walk through the full local demo. [docs/SUBMISSION.md](docs/SUBMISSION.md) - the project story, inspiration, features, and tech stack.
+Evidence-based adaptive tutor that detects, remediates, and verifies misconceptions using teacher-approved material.
 
 ## Judge quick start
 
@@ -189,7 +189,5 @@ docker compose exec db psql -U postgres -d pragyanta -c "\dx vector"
 All expected API errors are returned as JSON with a safe `error` message; raw model output and tracebacks are never sent to the browser.
 
 ## Deployment
-
-- `deploy/DEPLOYMENT.md` — credential-free Render/Railway preparation and public smoke checks
 
 `render.yaml` is deployment-ready for a future Render-style deployment, but no public deployment URL is claimed for the hackathon submission unless a provider account creates and verifies it. Vercel by itself is not enough for this application because the backend needs FastAPI plus PostgreSQL with pgvector.
