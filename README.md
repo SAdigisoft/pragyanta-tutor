@@ -28,7 +28,7 @@ npm --prefix web run build
 
 ## How Codex and GPT-5.6 accelerated the build
 
-Codex was used as the implementation partner across the full workflow: it inspected the existing React, FastAPI, PostgreSQL, and pgvector code; traced the lesson-to-tutor data flow; fixed the non-conflicting `6173/9000` ports and CORS contract; improved lesson ingestion and source-evidence selection; added lesson CRUD; repaired teacher/student role switching; and created focused API, frontend, smoke, and Playwright checks. Codex also generated the reproducible submission screenshots in `artifacts/`.
+Codex was used as the implementation partner across the full workflow: it inspected the existing React, FastAPI, PostgreSQL, and pgvector code; traced the lesson-to-tutor data flow; fixed the non-conflicting `6173/9000` ports and CORS contract; improved lesson ingestion and source-evidence selection; added lesson CRUD; repaired teacher/student role switching; and created focused API, frontend, smoke, and Playwright checks.
 
 GPT-5.6 was used through Codex for architecture decisions, debugging, code changes, test design, lesson-content quality review, grounded-tutor behavior, and submission documentation. The key product decisions were to keep the tutor bounded by teacher-provided sources, make the detect/remediate/verify loop persistent and inspectable, provide deterministic keyless mode for reliable judging, and keep the live OpenAI provider optional rather than pretending that mock responses are live model output.
 
