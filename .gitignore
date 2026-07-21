@@ -16,3 +16,5 @@ web/playwright-report/
 docs/
 NOTES.md
 codex.md
+artifacts/
+api/question_bank_part_*.json
